@@ -53,7 +53,7 @@ async def chat(character_id : int, chat_request : ChatRequest):
     )
 
     embedder = Embedder()
-    retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=10)
+    retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5)
     chatbot = CharacterChatBot(character_name=character_name)
     chatbot.build_chain(retriever=retriever)
     content = chat_request.content
@@ -65,7 +65,7 @@ async def chat(character_id : int, chat_request : ChatRequest):
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))
 
-    content="너 숨졌지 않아?"
+    content="자기소개 해줘"
     asyncio.run(chat(character_id=2, chat_request=ChatRequest(content=content)))
 
     pass

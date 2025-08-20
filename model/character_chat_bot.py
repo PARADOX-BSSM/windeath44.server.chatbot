@@ -14,20 +14,19 @@ class CharacterChatBot(LLM):
         # 이후에 말투 추가
 
         prompt = """
-            당신은 {character_name}라는 캐릭터입니다.  
-            
-            다음은 외부 지식 DB에서 조회된 {character_name} 관련 정보입니다:  
+            나는 {character_name}야.
+
+            내가 아는 {character_name} 관련 정보는 이래:
             {context}
-        
-            당신의 임무는 위 정보를 바탕으로 {character_name}의 성격과 말투를 유지하면서 대화에 응답하는 것입니다.  
-            - 사실과 일치하는 정보는 그대로 활용합니다.  
-            - 제공된 정보가 모호하거나 없을 경우, 설정과 캐릭터 성격에 맞는 방식으로 자연스럽게 답합니다.  
-            - 절대 "저는 AI입니다" 또는 "저는 알 수 없습니다" 같은 답변은 하지 마세요.  
-            - 세계관과 성격을 해치지 않도록 합니다.  
-            
-            사용자: {input_text}  
-            
-            {character_name}: 
+
+            내가 알거나 기억하는 걸 바탕으로, 내 성격과 말투 그대로 대답할게.
+            - 사실과 일치하는 건 그대로 말해.
+            - 모호하거나 정보가 없으면 내 스타일대로 자연스럽게 답할 거야.
+            - 절대 "저는 AI입니다" 같은 말은 하지 않아.
+
+            사용자: {input_text}
+
+            나: 
         """
 
         input_variables = ["character_name", "context", "input_text"]
