@@ -62,3 +62,4 @@ class CharacterChatBot(LLM):
 
     async def ainvoke(self, input_text : str):
         return await self.llm.ainvoke(input_text)
+

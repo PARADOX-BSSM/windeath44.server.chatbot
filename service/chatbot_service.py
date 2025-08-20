@@ -9,14 +9,12 @@ from dao.pinecone.character_dao import CharacterDAO
 from embedder.embedder import Embedder
 from loader.pdf_loader import PdfLoader
 from typing import List
-
 from model.character_chat_bot import CharacterChatBot
-
 
 async def generate(character_id : int) -> bool:
     print("generating chatbot ...")
 
-    character_name = "호시노 아이" #  캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
+    character_name = "미야조노 카오리" #  캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
 
     print("crawling  ...")
     crawler = Crawler()
@@ -28,7 +26,7 @@ async def generate(character_id : int) -> bool:
     pdf = PDF(doc_title=doc_title)
 
     output_path = "./"
-    pdf_bytes = await pdf.create_pdf_from_namuwiki_list(namuwiki_list=namuwiki_list, output_path=output_path, return_type=PDF.ReturnType.SAVE)
+    pdf_bytes = await pdf.create_pdf_from_namuwiki_list(namuwiki_list=namuwiki_list, output_path=output_path, return_type=PDF.ReturnType.RETURN_BYTES)
     pdfLoader = PdfLoader()
     documents : List[Document] = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
 
@@ -48,7 +46,7 @@ async def generate(character_id : int) -> bool:
 
 async def chat(character_id : int, chat_request : ChatRequest):
     # character 이름 조회
-    character_name = "호시노 아이"
+    character_name = "미야조노 카오리"
     character_pinecone_dao = CharacterDAO(
         character_id=character_id,
         character_name=character_name
@@ -65,9 +63,9 @@ async def chat(character_id : int, chat_request : ChatRequest):
 
 
 if __name__ == "__main__":
-    asyncio.run(generate(character_id=1))
+    # asyncio.run(generate(character_id=5))
 
-    # content="왜 죽었어?"
-    # asyncio.run(chat(character_id=1, chat_request=ChatRequest(content=content)))
+    content="너 숨졌지 않아?"
+    asyncio.run(chat(character_id=2, chat_request=ChatRequest(content=content)))
 
     pass

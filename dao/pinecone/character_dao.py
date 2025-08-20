@@ -27,6 +27,9 @@ class CharacterDAO(PineconeDAO):
     def retriever(self, embed_model: Embedder, top_k : int = 5) -> VectorStoreRetriever:
         self._init_vectorstore(embedder=embed_model)
         retriever = self.vectorstore.as_retriever(
+            # search_type
+            # similarity
+            # mmr
             search_type="mmr",
             search_kwargs={
                 "k": top_k,
