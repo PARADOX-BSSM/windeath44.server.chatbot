@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from langchain_core.vectorstores import VectorStoreRetriever
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
 from embedder.embedder import Embedder
@@ -20,7 +21,6 @@ class PineconeDAO:
             namespace=self.namespace,
             embedding=embedder.emb
         )
-
 
     # upload pinecone
     async def upsert_documents(self, docs: list, embed_model : Embedder):
@@ -50,7 +50,6 @@ class PineconeDAO:
         return self.index.describe_index_stats()
 
     def build_retriever(self, identity: str, embed_model: Embedder, top_k : int = 5):
-        self._init_vectorstore(embedder=embed_model)
         retriever = self.vectorstore.as_retriever(
             search_type="mmr",
             search_kwargs={

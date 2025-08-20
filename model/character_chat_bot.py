@@ -36,10 +36,29 @@ class CharacterChatBot(LLM):
         super().__init__(model=model, temperature=temperature, prompt=prompt, input_variables=input_variables)
 
 
-    def build_chain(self, retriever : VectorStoreRetriever):
+    def build_chain(self, mmr_retriever : VectorStoreRetriever, similarity_retriever : VectorStoreRetriever):
+        def hybrid_retrieve(query: str) -> str:
+            sim_docs = similarity_retriever.get_relevant_documents(query)
+            mmr_docs = mmr_retriever.get_relevant_documents(query)
+
+            seen, merged = set(), []
+            for d in sim_docs + mmr_docs:
+                if d.page_content not in seen:
+                    merged.append(d)
+                    seen.add(d.page_content)
+
+            chunks = []
+            for d in merged:
+                page = d.metadata.get("page", "?")
+                src = d.metadata.get("source", "")
+                text = d.page_content.strip().replace("\n", " ")
+                chunks.append(f"[p{page}][{src}] {text[:1200]}")
+
+            return "\n".join(chunks)
+
         chain = (
                 {
-                    "context": retriever | RunnableLambda(self.__format_docs),
+                    "context": RunnableLambda(hybrid_retrieve),
                     "input_text": RunnablePassthrough(),
                     "character_name": lambda _: self.character_name,
                 }
@@ -49,15 +68,6 @@ class CharacterChatBot(LLM):
         )
 
         self.llm = chain
-
-    def __format_docs(self, docs):
-        chunks = []
-        for d in docs:
-            page = d.metadata.get("page", "?")
-            src = d.metadata.get("source", "")
-            text = d.page_content.strip().replace("\n", " ")
-            chunks.append(f"[p{page}][{src}] {text[:1200]}")
-        return "\n".join(chunks)
 
 
     async def ainvoke(self, input_text : str):

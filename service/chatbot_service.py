@@ -53,9 +53,15 @@ async def chat(character_id : int, chat_request : ChatRequest):
     )
 
     embedder = Embedder()
-    retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5)
+
+    mmr_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type ="mmr")
+    similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type ="similarity")
+
+
     chatbot = CharacterChatBot(character_name=character_name)
-    chatbot.build_chain(retriever=retriever)
+
+
+    chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
     content = chat_request.content
     response = await chatbot.ainvoke(content)
     print(response)
@@ -65,7 +71,7 @@ async def chat(character_id : int, chat_request : ChatRequest):
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))
 
-    content="료타에 대해 알려줘"
+    content=""
     asyncio.run(chat(character_id=2, chat_request=ChatRequest(content=content)))
 
     pass
