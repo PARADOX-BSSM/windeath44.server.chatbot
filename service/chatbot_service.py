@@ -4,14 +4,15 @@ from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
 
-from api.v1.dto.chat_request import ChatRequest
+from api.v1.dto.request.chat_request import ChatRequest
+from api.v1.dto.response.chatbot_response import ChatbotResponse
 from dao.pinecone.character_dao import CharacterDAO
 from embedder.embedder import Embedder
 from loader.pdf_loader import PdfLoader
 from typing import List
 from model.character_chat_bot import CharacterChatBot
 
-async def generate(character_id : int) -> bool:
+async def generate(character_id : int):
     print("generating chatbot ...")
 
     character_name = "미야조노 카오리" #  캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
@@ -41,10 +42,10 @@ async def generate(character_id : int) -> bool:
     await character_pinecone_dao.upsert(docs=documents, embed_model=embedder)
 
     print("success ...")
-    return False
+    return None
 
 
-async def chat(character_id : int, chat_request : ChatRequest):
+async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
     # character 이름 조회
     character_name = "미야조노 카오리"
     character_pinecone_dao = CharacterDAO(
@@ -65,8 +66,8 @@ async def chat(character_id : int, chat_request : ChatRequest):
     content = chat_request.content
     response = await chatbot.ainvoke(content)
     print(response)
-    return None
 
+    return ChatbotResponse(comment=response)
 
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))

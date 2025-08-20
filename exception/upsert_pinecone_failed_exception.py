@@ -1,7 +1,7 @@
-from exception.business_exception import BaseException
+from exception.base_exception import BusinessException
 
 
-class UpsertPineconeFailedException(BaseException):
+class UpsertPineconeFailedException(BusinessException):
     def __init__(self, namespace : str):
         self.message = f"upsert pinecone failed || namespace : {namespace}"
         self.status_code = 500

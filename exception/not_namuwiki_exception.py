@@ -1,7 +1,7 @@
-from exception.business_exception import BaseException
+from exception.base_exception import BusinessException
 
 
-class NotNamuwikiException(BaseException):
+class NotNamuwikiException(BusinessException):
     def __init__(self):
         """인자를 받지 않습니다."""
         message = "URL이 나무위키 형식이 아닙니다."

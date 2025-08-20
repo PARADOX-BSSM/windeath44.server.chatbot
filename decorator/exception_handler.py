@@ -1,12 +1,14 @@
 from typing import Callable
-from exception.business_exception import BaseException
 from fastapi import HTTPException
+
+from exception.base_exception import BusinessException
+
 
 def exception_handler(func: Callable) -> Callable:
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except BaseException as e:
+        except BusinessException as e:
             print("error : ", e.message)
             print("status code:", e.status_code)
             raise HTTPException(status_code=e.status_code, detail=e.message)
