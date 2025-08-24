@@ -6,6 +6,7 @@ from langchain_core.documents import Document
 from api.schemas.request.chat_request import ChatRequest
 from api.schemas.response.chatbot_generated_response import ChatBotGeneratedResponse
 from api.schemas.response.chatbot_response import ChatbotResponse
+from domain.documents.character import Character
 from domain.repositories.character_vector_store import CharacterVectorStore
 from adpter.embedder.embedder import Embedder
 from adpter.loader.pdf_loader import PdfLoader
@@ -13,9 +14,46 @@ from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
 from domain.repositories import character_repo
 
+
+
+async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
+    character = await _get_character(character_id)
+    character_name = character.name
+
+    mmr_retriever, similarity_retriever = await __get_retriever(character_id, character_name)
+
+    chatbot = CharacterChatBot(character_name=character_name)
+    chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
+    content = chat_request.content
+
+    response = await chatbot.ainvoke(content)
+    print(response)
+
+    return ChatbotResponse(comment=response)
+
+
+async def _get_character(character_id: int) -> Character:
+    character = await character_repo.find_by_id(character_id)
+    return character
+
+
+async def __get_retriever(character_id : int, character_name : str) -> Tuple[VectorStoreRetriever, VectorStoreRetriever]:
+    character_pinecone_dao = CharacterVectorStore(
+        character_id=character_id,
+        character_name=character_name
+    )
+    embedder = Embedder()
+    mmr_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="mmr")
+    similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="similarity")
+    return mmr_retriever, similarity_retriever
+
+
+
+
+
 async def generate(character_id : int) -> ChatBotGeneratedResponse:
     print("generating chatbot ...")
-    character_name = await _get_character_name(character_id)
+    character_name = await _get_character_name_by_gRPC(character_id)
 
     print("crawling  ...")
     namuwiki_list = await _crawl_namuwiki(character_name)
@@ -59,7 +97,7 @@ async def _crawl_namuwiki(character_name : str) -> List[Tuple[str, str, str]]:
     return namuwiki_list
 
 
-async def _get_character_name(character_id: int) -> str:
+async def _get_character_name_by_gRPC(character_id: int) -> str:
     character_name = "미야조노 카오리"  # 캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
     return character_name
 
@@ -72,34 +110,6 @@ async def _upsert_character_document_for_pincone(character_id : int, character_n
     )
     # pinecone 저장
     await character_pinecone_dao.upsert(docs=documents, embed_model=embedder)
-
-
-async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
-    # character 이름 조회
-    character_name = "미야조노 카오리"
-
-    mmr_retriever, similarity_retriever = await __get_retriever(character_id, character_name)
-
-    chatbot = CharacterChatBot(character_name=character_name)
-    chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
-    content = chat_request.content
-
-    response = await chatbot.ainvoke(content)
-    print(response)
-
-    return ChatbotResponse(comment=response)
-
-
-async def __get_retriever(character_id : int, character_name : str) -> Tuple[VectorStoreRetriever, VectorStoreRetriever]:
-    character_pinecone_dao = CharacterVectorStore(
-        character_id=character_id,
-        character_name=character_name
-    )
-    embedder = Embedder()
-    mmr_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="mmr")
-    similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="similarity")
-    return mmr_retriever, similarity_retriever
-
 
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))

@@ -10,3 +10,8 @@ async def save(character_id : int, character_name : Optional[str] = None, charac
         character_wordset = character_wordset or []
     )
     await character.save()
+
+
+async def find_by_id(character_id) -> Character:
+    character = await Character.find_one(Character.id == character_id)
+    return character
