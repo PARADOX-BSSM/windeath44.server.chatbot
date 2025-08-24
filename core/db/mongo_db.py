@@ -11,4 +11,4 @@ async def init_mongodb(app : FastAPI):
     app.state.mongo_client = client
 
 async def close_mongodb(app: FastAPI):
-    await app.state.mongo_client.close()
+    app.state.mongo_client.close()

@@ -22,7 +22,9 @@ class CharacterVectorStore(PineconeVectorStore):
         except Exception as e:
             raise UpsertPineconeFailedException(self.character_name)
 
-
+    async def delete(self, embed_model : Embedder):
+        self._init_vectorstore(embedder=embed_model)
+        self.vectorstore.delete(delete_all=True, namespace=self.namespace)
 
     # 말투 넣을거임
     def retriever(self, embed_model: Embedder, top_k : int = 5, search_type : str = "mmr") -> VectorStoreRetriever:

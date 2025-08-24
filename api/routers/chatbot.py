@@ -1,14 +1,12 @@
 from fastapi import APIRouter
 
-from api.schemas.common.dto.response.BaseResponse import BaseResponse
+from api.schemas.common.response.BaseResponse import BaseResponse
 from api.schemas.request.chat_request import ChatRequest
-from api.decorators.exception_handler_decorator import exception_handler
 from services import chatbot_service
 
 router = APIRouter(prefix="/chatbots", tags=["chatbot"])
 
 # 캐릭터 챗
-@exception_handler
 @router.post("/chat/{character_id}")
 async def chat(
         character_id: int,
@@ -18,11 +16,10 @@ async def chat(
     return BaseResponse(message="chatbot successfully answered", data=chatbot_response)
 
 # 캐릭터 챗봇 생성
-@exception_handler
 @router.post("/generate/{character_id}")
 async def generate(
         character_id : int
 ) -> BaseResponse:
-    chatbot_response = await chatbot_service.generate(character_id)
-    return BaseResponse(message="chatbot successfully generated", data=chatbot_response)
+    await chatbot_service.generate(character_id)
+    return BaseResponse(message="chatbot successfully generated")
 

@@ -4,7 +4,6 @@ from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
 from api.schemas.request.chat_request import ChatRequest
-from api.schemas.response.chatbot_generated_response import ChatBotGeneratedResponse
 from api.schemas.response.chatbot_response import ChatbotResponse
 from domain.documents.character import Character
 from domain.repositories.character_vector_store import CharacterVectorStore
@@ -13,7 +12,7 @@ from adpter.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
 from domain.repositories import character_repo
-
+from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 
 
 async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
@@ -50,8 +49,7 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
 
 
 
-
-async def generate(character_id : int) -> ChatBotGeneratedResponse:
+async def generate(character_id : int):
     print("generating chatbot ...")
     character_name = await _get_character_name_by_gRPC(character_id)
 
@@ -69,10 +67,10 @@ async def generate(character_id : int) -> ChatBotGeneratedResponse:
     await _upsert_character_document_for_pincone(character_id, character_name, documents)
 
     print("saving character for mongodb ...")
-    await character_repo.save(character_id=character_id, character_name=character_name)
+    async with rollback_pinecone_on_mongo_failure(character_id=character_id, character_name=character_name):
+        await character_repo.save(character_id=character_id, character_name=character_name)
 
     print("success!!!")
-    return ChatBotGeneratedResponse(generated=True)
 
 
 async def _load_documents_from_pdf(character_id : int, pdf_bytes : bytes) -> List[Document]:
@@ -86,7 +84,8 @@ async def _generate_pdf(character_name : str, namuwiki_list : List[Tuple[str, st
     pdf = PDF(doc_title=doc_title)
     pdf_bytes = await pdf.create_pdf_from_namuwiki_list(
         namuwiki_list=namuwiki_list,
-        return_type=PDF.ReturnType.RETURN_BYTES
+        return_type=PDF.ReturnType.RETURN_BYTES,
+        output_path="./"
     )
     return pdf_bytes
 
