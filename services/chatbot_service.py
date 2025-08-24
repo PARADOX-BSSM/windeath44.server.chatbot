@@ -1,10 +1,8 @@
 import asyncio
-
 from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
-
 from api.schemas.request.chat_request import ChatRequest
 from api.schemas.response.chatbot_generated_response import ChatBotGeneratedResponse
 from api.schemas.response.chatbot_response import ChatbotResponse
@@ -33,7 +31,7 @@ async def generate(character_id : int) -> ChatBotGeneratedResponse:
     await _upsert_character_document_for_pincone(character_id, character_name, documents)
 
     print("saving character for mongodb ...")
-    await character_repo.save(character_name=character_name)
+    await character_repo.save(character_id=character_id, character_name=character_name)
 
     print("success!!!")
     return ChatBotGeneratedResponse(generated=True)

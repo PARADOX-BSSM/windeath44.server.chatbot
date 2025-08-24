@@ -4,6 +4,7 @@ from pydantic import field_validator
 from exceptions.character_word_set_length_exceeded_exception import CharacterWordSetLengthExceededException
 
 class Character(Document):
+    id : int
     name : str
     character_wordset : 'List[CharacterWordSet]'
 
