@@ -1,10 +1,7 @@
 from typing import List
-
 from beanie import Document, Indexed
 from pydantic import field_validator
-
 from exceptions.character_word_set_length_exceeded_exception import CharacterWordSetLengthExceededException
-
 
 class Character(Document):
     name : str

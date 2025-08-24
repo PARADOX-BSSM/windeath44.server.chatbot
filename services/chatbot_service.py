@@ -13,35 +13,60 @@ from adpter.embedder.embedder import Embedder
 from adpter.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
+from domain.repositories import character_repo
 
 async def generate(character_id : int) -> ChatBotGeneratedResponse:
     print("generating chatbot ...")
-    character_name = "미야조노 카오리" #  캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
+    character_name = await _get_character_name(character_id)
 
     print("crawling  ...")
-    crawler = Crawler()
-    namuwiki_list : List[(str, str, str)]= await crawler.get_namuwiki_list(name=character_name)
+    namuwiki_list = await _crawl_namuwiki(character_name)
     # title, content, level을 튜플의 요소로 갖고 있음.
 
     print("generating pdf ...")
-    doc_title = f"{character_name} 세계관"
-    pdf = PDF(doc_title=doc_title)
+    pdf_bytes = await _generate_pdf(character_name, namuwiki_list)
 
-    output_path = "./"
-    pdf_bytes = await pdf.create_pdf_from_namuwiki_list(namuwiki_list=namuwiki_list, output_path=output_path, return_type=PDF.ReturnType.RETURN_BYTES)
-    pdfLoader = PdfLoader()
-    documents : List[Document] = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
+    print("convert pdf to langchain's documents ...")
+    documents = await _load_documents_from_pdf(character_id, pdf_bytes)
 
-    print("saveing document for pinecone ...")
-    await __upsert_character_document_for_pincone(character_id, character_name, documents)
+    print("saving document for pinecone ...")
+    await _upsert_character_document_for_pincone(character_id, character_name, documents)
 
-    print("success ...")
+    print("saving character for mongodb ...")
+    await character_repo.save(character_name=character_name)
 
-    # mongo db에 저장
+    print("success!!!")
     return ChatBotGeneratedResponse(generated=True)
 
 
-async def __upsert_character_document_for_pincone(character_id : int, character_name : str, documents : List[Document]):
+async def _load_documents_from_pdf(character_id : int, pdf_bytes : bytes) -> List[Document]:
+    pdfLoader = PdfLoader()
+    documents = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
+    return documents
+
+
+async def _generate_pdf(character_name : str, namuwiki_list : List[Tuple[str, str, str]]):
+    doc_title = f"{character_name} 세계관"
+    pdf = PDF(doc_title=doc_title)
+    pdf_bytes = await pdf.create_pdf_from_namuwiki_list(
+        namuwiki_list=namuwiki_list,
+        return_type=PDF.ReturnType.RETURN_BYTES
+    )
+    return pdf_bytes
+
+
+async def _crawl_namuwiki(character_name : str) -> List[Tuple[str, str, str]]:
+    crawler = Crawler()
+    namuwiki_list = await crawler.get_namuwiki_list(name=character_name)
+    return namuwiki_list
+
+
+async def _get_character_name(character_id: int) -> str:
+    character_name = "미야조노 카오리"  # 캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
+    return character_name
+
+
+async def _upsert_character_document_for_pincone(character_id : int, character_name : str, documents : List[Document]):
     embedder = Embedder()
     character_pinecone_dao = CharacterVectorStore(
         character_name=character_name,
