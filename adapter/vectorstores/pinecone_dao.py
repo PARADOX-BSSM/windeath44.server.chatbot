@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
-from adpter.embedder.embedder import Embedder
+from adapter.embedder.embedder import Embedder
 
 load_dotenv()
 

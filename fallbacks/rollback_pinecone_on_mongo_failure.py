@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from adpter.embedder.embedder import Embedder
+from adapter.embedder.embedder import Embedder
 from domain.repositories.character_vector_store import CharacterVectorStore
 
 @asynccontextmanager

@@ -7,8 +7,8 @@ from api.schemas.request.chat_request import ChatRequest
 from api.schemas.response.chatbot_response import ChatbotResponse
 from domain.documents.chatbot import ChatBot
 from domain.repositories.character_vector_store import CharacterVectorStore
-from adpter.embedder.embedder import Embedder
-from adpter.loader.pdf_loader import PdfLoader
+from adapter.embedder.embedder import Embedder
+from adapter.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
 from domain.repositories import chatbot_repo
