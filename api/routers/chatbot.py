@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from idlelib.query import Query
 
-from api.schemas.common.response.BaseResponse import BaseResponse
+from fastapi import APIRouter, Depends
+
+from api.schemas.common.request.cursor_query import ChatbotQuery
+from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chat_request import ChatRequest
 from services import chatbot_service
 
@@ -23,3 +26,10 @@ async def generate(
     await chatbot_service.generate(character_id)
     return BaseResponse(message="chatbot successfully generated")
 
+# 챗봇 리스트 조회
+@router.get("/")
+async def list_chatbots(
+        params : ChatbotQuery = Depends(),
+) -> BaseResponse:
+    cursor_response = await chatbot_service.find_by_pagenate(params.cursor_id, params.size)
+    return BaseResponse(message="chatbot successfully get", data=cursor_response)

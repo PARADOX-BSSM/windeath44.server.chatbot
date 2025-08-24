@@ -1,6 +1,6 @@
 import asyncio
 from typing import List, Optional
-from beanie import operators as oper
+from beanie import operators as oper, SortDirection
 
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
 from domain.documents.chatbot import ChatBot, CharacterWordSet
@@ -28,3 +28,22 @@ async def update_wordset(character_id : int, chatbot_wordset_request : ChatBotWo
 async def exists_by_id(character_id : int) -> bool:
     chatbot = await find_by_id(character_id)
     return bool(chatbot)
+
+
+async def find(size : int) -> List[ChatBot]:
+    chatbots = (
+        await ChatBot.find_all()
+        .sort(("_id", SortDirection.DESCENDING))
+        .limit(size + 1)
+        .to_list()
+    )
+    return chatbots
+
+async def find_by_cursor_id(cursor_id : int, size : int) -> List[ChatBot]:
+    chatbots = (
+        await ChatBot.find(oper.LT(ChatBot.id, cursor_id))
+        .sort(("_id", SortDirection.DESCENDING))
+        .limit(size + 1)
+        .to_list()
+    )
+    return chatbots

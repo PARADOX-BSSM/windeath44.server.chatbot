@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.schemas.common.response.BaseResponse import BaseResponse
+from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
 from services import chatbot_wordset_service
 

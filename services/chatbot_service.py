@@ -3,6 +3,8 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
+
+from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chat_request import ChatRequest
 from api.schemas.response.chatbot_response import ChatbotResponse
 from domain.documents.chatbot import ChatBot
@@ -29,7 +31,7 @@ async def chat(chatbot_id : int, chat_request : ChatRequest) -> ChatbotResponse:
     response = await chatbot.ainvoke(content)
     print(response)
 
-    return ChatbotResponse(comment=response)
+    return ChatbotResponse(answer=response)
 
 
 async def _get_chatbot(chatbot_id: int) -> ChatBot:
@@ -122,3 +124,10 @@ if __name__ == "__main__":
     asyncio.run(chat(chatbot_id=1, chat_request=ChatRequest(content=content)))
 
     pass
+
+
+
+async def find_by_pagenate(cursor_id : int, size : int) -> CursorResponse:
+    chatbot_response = await chatbot_repo.find(size) if cursor_id is None else await chatbot_repo.find_by_cursor_id(cursor_id, size)
+    has_next = len(chatbot_response) > size
+    return CursorResponse(hasNext=has_next, values=chatbot_response[:size])
