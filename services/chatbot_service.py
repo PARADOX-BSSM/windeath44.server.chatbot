@@ -16,13 +16,13 @@ from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotExce
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 
 
-async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
-    character = await _get_character(character_id)
-    character_name = character.name
+async def chat(chatbot_id : int, chat_request : ChatRequest) -> ChatbotResponse:
+    chatbot = await _get_chatbot(chatbot_id)
+    chatbot_name = chatbot.name
 
-    mmr_retriever, similarity_retriever = await __get_retriever(character_id, character_name)
+    mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
 
-    chatbot = CharacterChatBot(character_name=character_name)
+    chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset)
     chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
     content = chat_request.content
 
@@ -32,9 +32,9 @@ async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotRespons
     return ChatbotResponse(comment=response)
 
 
-async def _get_character(character_id: int) -> ChatBot:
-    character = await chatbot_repo.find_by_id(character_id)
-    return character
+async def _get_chatbot(chatbot_id: int) -> ChatBot:
+    chatbot = await chatbot_repo.find_by_id(chatbot_id)
+    return chatbot
 
 
 async def __get_retriever(character_id : int, character_name : str) -> Tuple[VectorStoreRetriever, VectorStoreRetriever]:

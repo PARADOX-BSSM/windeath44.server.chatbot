@@ -1,10 +1,15 @@
+from typing import List
+
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.vectorstores import VectorStoreRetriever
 
 from ai.llm import LLM
+from domain.documents.chatbot import CharacterWordSet
+
 
 class CharacterChatBot(LLM):
-    def __init__(self, character_name : str):
+    def __init__(self, character_name : str, character_wordset : List[CharacterWordSet]):
+        self.character_wordset = character_wordset
         self.character_name = character_name
         model = "gpt-4o"
         temperature=0
@@ -17,7 +22,11 @@ class CharacterChatBot(LLM):
 
         내가 아는 {character_name} 관련 정보는 이래:
         {context}
+        
+        [말투 예시]
+        {style_examples}
 
+        [대화 규칙]
         - 내가 아는 사실은 최대한 정확하게 사용해.
         - 기억이 모호하거나 정보가 없으면 내 성격에 맞게 자연스럽게 추측해서 말해.
         - 감정, 반응, 말버릇 등을 담아 실제 사람이 말하는 것처럼 표현해.
@@ -28,11 +37,21 @@ class CharacterChatBot(LLM):
         나: 
         """
 
-        input_variables = ["character_name", "context", "input_text"]
+        input_variables = ["character_name", "context", "style_examples", "input_text"]
 
 
         super().__init__(model=model, temperature=temperature, prompt=prompt, input_variables=input_variables)
 
+    def __format_style_examples(self) -> str:
+        """
+        CharacterWordSet(question, answer) 리스트를 few-shot 형식으로 변환.
+        """
+        shots = []
+        for w in self.character_wordset:
+            q = (w.question or "").strip().replace("\n", " ")
+            a = (w.answer or "").strip()
+            shots.append(f"사용자: {q}\n나: {a}")
+        return "\n\n".join(shots)
 
     def build_chain(self, mmr_retriever : VectorStoreRetriever, similarity_retriever : VectorStoreRetriever):
         def hybrid_retrieve(query: str) -> str:
@@ -58,6 +77,7 @@ class CharacterChatBot(LLM):
                 {
                     "context": RunnableLambda(hybrid_retrieve),
                     "input_text": RunnablePassthrough(),
+                    "style_examples" : lambda _: self.__format_style_examples(),
                     "character_name": lambda _: self.character_name,
                 }
                 | self.prompt

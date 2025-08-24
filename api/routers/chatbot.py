@@ -7,12 +7,12 @@ from services import chatbot_service
 router = APIRouter(prefix="/chatbots", tags=["chatbot"])
 
 # 캐릭터 챗
-@router.post("/chat/{character_id}")
+@router.post("/chat/{chatbot_id}")
 async def chat(
-        character_id: int,
+        chatbot_id: int,
         chat_request : ChatRequest
     ) -> BaseResponse:
-    chatbot_response = await chatbot_service.chat(character_id, chat_request)
+    chatbot_response = await chatbot_service.chat(chatbot_id, chat_request)
     return BaseResponse(message="chatbot successfully answered", data=chatbot_response)
 
 # 캐릭터 챗봇 생성
