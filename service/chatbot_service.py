@@ -1,18 +1,20 @@
 import asyncio
 
+from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
 
 from api.v1.dto.request.chat_request import ChatRequest
+from api.v1.dto.response.chatbot_generated_response import ChatBotGeneratedResponse
 from api.v1.dto.response.chatbot_response import ChatbotResponse
 from dao.pinecone.character_dao import CharacterDAO
 from embedder.embedder import Embedder
 from loader.pdf_loader import PdfLoader
-from typing import List
+from typing import List, Tuple
 from model.character_chat_bot import CharacterChatBot
 
-async def generate(character_id : int):
+async def generate(character_id : int) -> ChatBotGeneratedResponse:
     print("generating chatbot ...")
 
     character_name = "미야조노 카오리" #  캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
@@ -32,42 +34,48 @@ async def generate(character_id : int):
     documents : List[Document] = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
 
     print("saveing document for pinecone ...")
+    await __upsert_character_document_for_pincone(character_id, character_name, documents)
+
+    print("success ...")
+    return ChatBotGeneratedResponse(generated=True)
+
+
+async def __upsert_character_document_for_pincone(character_id : int, character_name : str, documents : List[Document]):
     embedder = Embedder()
     character_pinecone_dao = CharacterDAO(
         character_name=character_name,
         character_id=character_id
     )
-
     # pinecone 저장
     await character_pinecone_dao.upsert(docs=documents, embed_model=embedder)
-
-    print("success ...")
-    return None
 
 
 async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotResponse:
     # character 이름 조회
     character_name = "미야조노 카오리"
-    character_pinecone_dao = CharacterDAO(
-        character_id=character_id,
-        character_name=character_name
-    )
 
-    embedder = Embedder()
-
-    mmr_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type ="mmr")
-    similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type ="similarity")
-
+    mmr_retriever, similarity_retriever = await __get_retriever(character_id, character_name)
 
     chatbot = CharacterChatBot(character_name=character_name)
-
-
     chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
     content = chat_request.content
+
     response = await chatbot.ainvoke(content)
     print(response)
 
     return ChatbotResponse(comment=response)
+
+
+async def __get_retriever(character_id : int, character_name : str) -> Tuple[VectorStoreRetriever, VectorStoreRetriever]:
+    character_pinecone_dao = CharacterDAO(
+        character_id=character_id,
+        character_name=character_name
+    )
+    embedder = Embedder()
+    mmr_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="mmr")
+    similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="similarity")
+    return mmr_retriever, similarity_retriever
+
 
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))
