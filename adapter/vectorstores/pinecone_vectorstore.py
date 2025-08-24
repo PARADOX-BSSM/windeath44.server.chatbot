@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pinecone import Pinecone
-from langchain_pinecone import PineconeVectorStore
+from langchain_pinecone import PineconeVectorStore as LGPineconeVectorStore
 from adapter.embedder.embedder import Embedder
 
 load_dotenv()
@@ -15,7 +15,7 @@ class PineconeVectorStore:
         self.vectorstore = None
 
     def _init_vectorstore(self, embedder: Embedder):
-        self.vectorstore = PineconeVectorStore(
+        self.vectorstore = LGPineconeVectorStore(
             index_name=self.index_name,
             namespace=self.namespace,
             embedding=embedder.emb

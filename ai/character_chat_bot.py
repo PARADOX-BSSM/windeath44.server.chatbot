@@ -6,7 +6,6 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from ai.llm import LLM
 from domain.documents.chatbot import CharacterWordSet
 
-
 class CharacterChatBot(LLM):
     def __init__(self, character_name : str, character_wordset : List[CharacterWordSet]):
         self.character_wordset = character_wordset

@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 from beanie import operators as oper
 
@@ -15,10 +16,9 @@ async def save(character_id : int, character_name : Optional[str] = None, charac
     await character.save()
 
 
-async def find_by_id(character_id) -> ChatBot:
+async def find_by_id(character_id : int) -> ChatBot:
     character = await ChatBot.find_one(ChatBot.id == character_id)
     return character
-
 
 async def update_wordset(character_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
     character = await find_by_id(character_id)

@@ -3,7 +3,7 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 
-from adapter.vectorstores.pinecone_dao import PineconeVectorStore
+from adapter.vectorstores.pinecone_vectorstore import PineconeVectorStore
 from adapter.embedder.embedder import Embedder
 from exceptions.upsert_pinecone_failed_exception import UpsertPineconeFailedException
 

@@ -118,7 +118,7 @@ async def _upsert_character_document_for_pincone(character_id : int, character_n
 if __name__ == "__main__":
     # asyncio.run(generate(character_id=5))
 
-    content=""
-    asyncio.run(chat(character_id=2, chat_request=ChatRequest(content=content)))
+    content="안졸려? 자고싶어 미치겠어"
+    asyncio.run(chat(chatbot_id=1, chat_request=ChatRequest(content=content)))
 
     pass
