@@ -6,8 +6,8 @@ from services import chatbot_wordset_service
 
 router = APIRouter(prefix="/chatbots/wordset", tags=["chatbot_wordset"])
 
-@router.patch("/{character_id}")
-async def modify_wordsets(character_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
-    await chatbot_wordset_service.modify(character_id, chatbot_wordset_request)
+@router.patch("/{chatbot_id}")
+async def modify_wordsets(chatbot_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
+    await chatbot_wordset_service.modify(chatbot_id, chatbot_wordset_request)
     return BaseResponse(message="successfully added wordset")
 

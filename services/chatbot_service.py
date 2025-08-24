@@ -5,13 +5,14 @@ from nadf.pdf import PDF
 from langchain_core.documents import Document
 from api.schemas.request.chat_request import ChatRequest
 from api.schemas.response.chatbot_response import ChatbotResponse
-from domain.documents.character import Character
+from domain.documents.chatbot import ChatBot
 from domain.repositories.character_vector_store import CharacterVectorStore
 from adpter.embedder.embedder import Embedder
 from adpter.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
-from domain.repositories import character_repo
+from domain.repositories import chatbot_repo
+from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotException
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 
 
@@ -31,8 +32,8 @@ async def chat(character_id : int, chat_request : ChatRequest) -> ChatbotRespons
     return ChatbotResponse(comment=response)
 
 
-async def _get_character(character_id: int) -> Character:
-    character = await character_repo.find_by_id(character_id)
+async def _get_character(character_id: int) -> ChatBot:
+    character = await chatbot_repo.find_by_id(character_id)
     return character
 
 
@@ -50,6 +51,10 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
 
 
 async def generate(character_id : int):
+    print("check exsists ...")
+    exists_chatbot = await chatbot_repo.exists_by_id(character_id)
+    if exists_chatbot: raise AlreadyExistsChatbotException(character_id=character_id)
+
     print("generating chatbot ...")
     character_name = await _get_character_name_by_gRPC(character_id)
 
@@ -68,7 +73,7 @@ async def generate(character_id : int):
 
     print("saving character for mongodb ...")
     async with rollback_pinecone_on_mongo_failure(character_id=character_id, character_name=character_name):
-        await character_repo.save(character_id=character_id, character_name=character_name)
+        await chatbot_repo.save(character_id=character_id, character_name=character_name)
 
     print("success!!!")
 

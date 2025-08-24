@@ -1,5 +1,5 @@
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
-from domain.repositories import character_repo
+from domain.repositories import chatbot_repo
 
 
 async def modify(character_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
