@@ -3,4 +3,4 @@ from domain.repositories import chatbot_repo
 
 
 async def modify(character_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
-    await character_repo.update_wordset(character_id, chatbot_wordset_request)
+    await chatbot_repo.update_wordset(character_id, chatbot_wordset_request)
