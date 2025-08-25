@@ -1,6 +1,6 @@
-# FastAPI용 Dockerfile 예시
-# 기본 구조: requirements.txt → main.py(또는 app/main.py)에 app 객체 존재 가정
-# 실행: docker build -t my-fastapi .  →  docker run -p 8000:8000 my-fastapi
+# FastAPI용 Dockerfile 예시 (+ Google Chrome 설치)
+# 빌드: docker build -t my-fastapi .
+# 실행: docker run -p 8000:8000 my-fastapi
 
 # 0) 공통 베이스 설정
 FROM python:3.12-slim AS base
@@ -9,74 +9,59 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     UVICORN_WORKERS=2
 
-# 보안/사이즈 최적화: 필요 패키지만 설치하고 캐시 제거
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
-    && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
+ && rm -rf /var/lib/apt/lists/*
 
-# 비루트 사용자 생성
+# 비루트 사용자
 RUN adduser --disabled-password --gecos "" appuser
 WORKDIR /app
 
 # 1) 의존성 전용 스테이지
 FROM base AS deps
-# 가능하면 정확히 고정된 버전의 requirements.txt 사용 권장
 COPY requirements.txt ./
-# pip 최신화 및 의존성 설치
 RUN python -m pip install --upgrade pip \
-    && pip install -r requirements.txt
+ && pip install -r requirements.txt
 
-# 2) 런타임 스테이지 (슬림, 비루트)
+# 2) 런타임 스테이지 (여기에 Chrome 설치)
 FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# 운영에 필요한 최소 패키지만 남기고, 빌드툴은 미포함
+# ── Chrome 저장소 추가 및 설치 ─────────────────────────────────────────────
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends ca-certificates wget gnupg \
+ && wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub \
+      | gpg --dearmor -o /usr/share/keyrings/google-linux.gpg \
+ && printf "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main\n" \
+      > /etc/apt/sources.list.d/google-chrome.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+      google-chrome-stable \
+      fonts-noto-cjk \
+      libxss1 libxshmfence1 libgbm1 xvfb tzdata \
+ && rm -rf /var/lib/apt/lists/*
+# (선택) 버전 확인
+RUN which google-chrome && google-chrome --version
 
-# 앱 디렉터리 준비
+# Chrome 경로 환경변수 (Selenium/undetected-chromedriver에서 사용)
+ENV GOOGLE_CHROME_BIN=/usr/bin/google-chrome
+ENV CHROME_BIN=/usr/bin/google-chrome
+
+# 앱 디렉터리
 WORKDIR /app
 
-# deps 스테이지에서 설치한 파이썬 패키지 계층 복사
-# python:3.12-slim 이미지의 site-packages 경로는 /usr/local/... 아래에 위치
+# deps에서 설치된 파이썬 패키지 복사
 COPY --from=deps /usr/local /usr/local
 
-# 애플리케이션 소스 복사 (필요 시 .dockerignore로 빌드 컨텍스트 정리)
+# 애플리케이션 소스 복사
 COPY . .
 
 # 비루트로 실행
 RUN adduser --disabled-password --gecos "" appuser \
-    && chown -R appuser:appuser /app
+ && chown -R appuser:appuser /app
 USER appuser
 
-# ---- 실행 옵션 ----
-# 1) 개발/단독 실행: Uvicorn
+# 실행 (포트는 필요에 맞게 조정)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4449"]
-
-# 2) 운영 권장(선택): Gunicorn + UvicornWorkers를 쓰려면 아래로 교체
-# CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "8"]
-
-# -----------------------------
-# 참고: requirements.txt 예시
-# fastapi==0.115.0
-# uvicorn[standard]==0.30.6
-# pydantic==2.9.2
-# -----------------------------
-
-# -----------------------------
-# 권장 .dockerignore 예시 (프로젝트 루트에 생성)
-# __pycache__/
-# *.pyc
-# .venv/
-# .mypy_cache/
-# .pytest_cache/
-# .git/
-# .idea/
-# .vscode/
-# .DS_Store
-# .env
-# tests/
-#
