@@ -1,12 +1,9 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Request
 from starlette.responses import JSONResponse
-
 from api import api_router
 from core.db.mongo_db import init_mongodb, close_mongodb
 from exceptions.business_exception import BusinessException
-
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
