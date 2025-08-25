@@ -6,14 +6,15 @@ from langchain_core.documents import Document
 
 from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chat_request import ChatRequest
+from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
 from api.schemas.response.chatbot_response import ChatbotResponse
-from domain.documents.chatbot import ChatBot
+from domain.documents.chatbot import ChatBot, CharacterWordSet
 from domain.repositories.character_vector_store import CharacterVectorStore
 from adapter.embedder.embedder import Embedder
 from adapter.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
-from domain.repositories import chatbot_repo
+from domain.repositories import chatbot_repo, chatbot_wordset_repo
 from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotException
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 
@@ -125,6 +126,12 @@ if __name__ == "__main__":
 
     pass
 
+async def modify(character_id : int, chatbot_ids : List[int]):
+    # chatbot
+    character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_ids)
+    chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer) for character_wordset in character_wordsets]
+
+    await chatbot_repo.update_wordset(character_id, chatbot_wordsets)
 
 
 async def find_by_pagenate(cursor_id : int, size : int) -> CursorResponse:

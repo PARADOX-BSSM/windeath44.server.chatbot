@@ -4,13 +4,14 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 from domain.documents.chatbot import ChatBot
+from domain.documents.chatbot_wordset import ChatBotWordSet
 
 load_dotenv()
 
 async def init_mongodb(app : FastAPI):
     client = motor.motor_asyncio.AsyncIOMotorClient(os.getenv("MONGO_URI"))
     db = client['chatbot']
-    await init_beanie(database=db, document_models=[ChatBot])
+    await init_beanie(database=db, document_models=[ChatBot, ChatBotWordSet])
     app.state.mongo_client = client
 
 async def close_mongodb(app: FastAPI):

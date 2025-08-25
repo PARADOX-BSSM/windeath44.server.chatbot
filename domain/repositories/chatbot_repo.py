@@ -2,8 +2,10 @@ import asyncio
 from typing import List, Optional
 from beanie import operators as oper, SortDirection
 
+
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
 from domain.documents.chatbot import ChatBot, CharacterWordSet
+from domain.documents.chatbot_wordset import ChatBotWordSet
 
 
 async def save(character_id : int, character_name : Optional[str] = None, character_wordset : Optional[List[CharacterWordSet]] = None):
@@ -20,9 +22,9 @@ async def find_by_id(character_id : int) -> ChatBot:
     character = await ChatBot.find_one(ChatBot.id == character_id)
     return character
 
-async def update_wordset(character_id : int, chatbot_wordset_request : ChatBotWordSetRequest):
+async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWordSet]):
     character = await find_by_id(character_id)
-    await character.update(oper.Set({ChatBot.character_wordset : chatbot_wordset_request.wordset}))
+    await character.update(oper.Set({ChatBot.character_wordset : chatbot_wordsets}))
 
 
 async def exists_by_id(character_id : int) -> bool:
@@ -31,13 +33,13 @@ async def exists_by_id(character_id : int) -> bool:
 
 
 async def find(size : int) -> List[ChatBot]:
-    chatbots = (
+    chatBotWordSet = (
         await ChatBot.find_all()
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatbots
+    return chatBotWordSet
 
 async def find_by_cursor_id(cursor_id : int, size : int) -> List[ChatBot]:
     chatbots = (

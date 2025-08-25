@@ -2,10 +2,9 @@ from typing import List
 
 from pydantic import BaseModel
 
-class ChatBotWordItemRequest(BaseModel):
+class ChatBotWordIdsRequest(BaseModel):
     question: str
     answer: str
 
 class ChatBotWordSetRequest(BaseModel):
-    wordset: List[ChatBotWordItemRequest]
-
+    wordset: List[ChatBotWordIdsRequest]
