@@ -1,0 +1,82 @@
+# FastAPI용 Dockerfile 예시
+# 기본 구조: requirements.txt → main.py(또는 app/main.py)에 app 객체 존재 가정
+# 실행: docker build -t my-fastapi .  →  docker run -p 8000:8000 my-fastapi
+
+# 0) 공통 베이스 설정
+FROM python:3.12-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UVICORN_WORKERS=2
+
+# 보안/사이즈 최적화: 필요 패키지만 설치하고 캐시 제거
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 비루트 사용자 생성
+RUN adduser --disabled-password --gecos "" appuser
+WORKDIR /app
+
+# 1) 의존성 전용 스테이지
+FROM base AS deps
+# 가능하면 정확히 고정된 버전의 requirements.txt 사용 권장
+COPY requirements.txt ./
+# pip 최신화 및 의존성 설치
+RUN python -m pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# 2) 런타임 스테이지 (슬림, 비루트)
+FROM python:3.12-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# 운영에 필요한 최소 패키지만 남기고, 빌드툴은 미포함
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 앱 디렉터리 준비
+WORKDIR /app
+
+# deps 스테이지에서 설치한 파이썬 패키지 계층 복사
+# python:3.12-slim 이미지의 site-packages 경로는 /usr/local/... 아래에 위치
+COPY --from=deps /usr/local /usr/local
+
+# 애플리케이션 소스 복사 (필요 시 .dockerignore로 빌드 컨텍스트 정리)
+COPY . .
+
+# 비루트로 실행
+RUN adduser --disabled-password --gecos "" appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+# ---- 실행 옵션 ----
+# 1) 개발/단독 실행: Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# 2) 운영 권장(선택): Gunicorn + UvicornWorkers를 쓰려면 아래로 교체
+# CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "8"]
+
+# -----------------------------
+# 참고: requirements.txt 예시
+# fastapi==0.115.0
+# uvicorn[standard]==0.30.6
+# pydantic==2.9.2
+# -----------------------------
+
+# -----------------------------
+# 권장 .dockerignore 예시 (프로젝트 루트에 생성)
+# __pycache__/
+# *.pyc
+# .venv/
+# .mypy_cache/
+# .pytest_cache/
+# .git/
+# .idea/
+# .vscode/
+# .DS_Store
+# .env
+# tests/
+#
