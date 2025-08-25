@@ -34,20 +34,31 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates wget gnupg \
  && wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub \
       | gpg --dearmor -o /usr/share/keyrings/google-linux.gpg \
- && printf "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main\n" \
+ && arch="$(dpkg --print-architecture)" \
+ && printf "deb [arch=%s signed-by=/usr/share/keyrings/google-linux.gpg] http://dl.google.com/linux/chrome/deb/ stable main\n" "$arch" \
       > /etc/apt/sources.list.d/google-chrome.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
       google-chrome-stable \
       fonts-noto-cjk \
-      libxss1 libxshmfence1 libgbm1 xvfb tzdata \
+      # ▶ 런타임 필수 라이브러리(크롬 크래시 방지)
+      libnss3 libasound2 libxss1 libxshmfence1 libgbm1 \
+      libatk1.0-0 libatk-bridge2.0-0 libdbus-1-3 libcups2 libdrm2 \
+      libglib2.0-0 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
+      libxdamage1 libxext6 libxrandr2 libxrender1 libgtk-3-0 \
+      libpangocairo-1.0-0 libpango-1.0-0 tzdata \
  && rm -rf /var/lib/apt/lists/*
+
 # (선택) 버전 확인
-RUN which google-chrome && google-chrome --version
+RUN which google-chrome-stable && google-chrome-stable --version
 
 # Chrome 경로 환경변수 (Selenium/undetected-chromedriver에서 사용)
-ENV GOOGLE_CHROME_BIN=/usr/bin/google-chrome
-ENV CHROME_BIN=/usr/bin/google-chrome
+ENV GOOGLE_CHROME_BIN=/usr/bin/google-chrome-stable
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+
+# Chrome 런타임 디렉터리(권장)
+ENV XDG_RUNTIME_DIR=/tmp/runtime
+RUN mkdir -p $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
 
 # 앱 디렉터리
 WORKDIR /app
