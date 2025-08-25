@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.grpc";
+option java_outer_classname = "Proto";
+
+
+service GetCharacterService {
+  rpc getCharacter(GetCharacterRequest) returns (GetCharacterResponse);
+}
+
+message GetCharacterRequest {
+  int64 characterId = 1;
+}
+
+message GetCharacterResponse {
+  int64 animeId = 1;
+  string animeName = 2;
+  string name = 3;
+  string content = 4;
+  string state = 5;
+}

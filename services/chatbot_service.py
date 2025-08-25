@@ -4,6 +4,7 @@ from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
 
+from adapter.grpc.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chat_request import ChatRequest
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
@@ -19,11 +20,13 @@ from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotExce
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 
 
-async def chat(chatbot_id : int, chat_request : ChatRequest) -> ChatbotResponse:
+async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> ChatbotResponse:
     chatbot = await _get_chatbot(chatbot_id)
     chatbot_name = chatbot.name
 
     mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
+
+    session_id = str(chatbot_id) + user_id
 
     chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset)
     chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
@@ -53,13 +56,14 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
 
 
 
-async def generate(character_id : int):
+async def generate(character_id : int, chatbot_grpc_client : ChatbotGrpcClient ):
     print("check exsists ...")
     exists_chatbot = await chatbot_repo.exists_by_id(character_id)
     if exists_chatbot: raise AlreadyExistsChatbotException(character_id=character_id)
 
     print("generating chatbot ...")
-    character_name = await _get_character_name_by_gRPC(character_id)
+    character = await chatbot_grpc_client.get_character(character_id)
+    character_name = character.name
 
     print("crawling  ...")
     namuwiki_list = await _crawl_namuwiki(character_name)
@@ -104,7 +108,7 @@ async def _crawl_namuwiki(character_name : str) -> List[Tuple[str, str, str]]:
 
 
 async def _get_character_name_by_gRPC(character_id: int) -> str:
-    character_name = "미야조노 카오리"  # 캐릭터 이름 DB에서 조회 (gRPC 이용 anime 서버랑 통신)
+    character_name = "미야조노 카오리"  # 캐릭터 이름 DB에서 조회 (grpc 이용 anime 서버랑 통신)
     return character_name
 
 
@@ -125,9 +129,9 @@ if __name__ == "__main__":
 
     pass
 
-async def modify(character_id : int, chatbot_ids : List[int]):
+async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     # chatbot
-    character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_ids)
+    character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_wordset_ids)
     chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer) for character_wordset in character_wordsets]
 
     await chatbot_repo.update_wordset(character_id, chatbot_wordsets)
