@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-
 from api.schemas.common.request.cursor_query import CursorQuery
 from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest, ChatBotWordIdsRequest

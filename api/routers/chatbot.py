@@ -1,6 +1,3 @@
-from idlelib.query import Query
-from typing import List, Annotated
-
 from fastapi import APIRouter, Depends
 
 from api.schemas.common.request.cursor_query import CursorQuery
