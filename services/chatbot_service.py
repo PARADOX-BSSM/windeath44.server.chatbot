@@ -93,7 +93,6 @@ async def _generate_pdf(character_name : str, namuwiki_list : List[Tuple[str, st
     pdf_bytes = await pdf.create_pdf_from_namuwiki_list(
         namuwiki_list=namuwiki_list,
         return_type=PDF.ReturnType.RETURN_BYTES,
-        output_path="./"
     )
     return pdf_bytes
 
