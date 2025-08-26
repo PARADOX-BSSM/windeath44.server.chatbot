@@ -29,9 +29,9 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
     session_id = "chat:" + str(chatbot_id) + user_id
 
     chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)
-    chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
-    content = chat_request.content
+    await chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
 
+    content = chat_request.content
     response = await chatbot.ainvoke(content)
     print(response)
 

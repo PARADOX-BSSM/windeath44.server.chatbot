@@ -1,9 +1,12 @@
 import os
 
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory, ConversationSummaryBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_core.runnables import Runnable
 from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from domain.repositories import chat_hisotry_repo
+
 load_dotenv()
 
 class MemoryRunnable(Runnable):
@@ -11,15 +14,22 @@ class MemoryRunnable(Runnable):
         self.runnable = runnable
         self.memory = None
         self.save = save
+        self.session_id = session_id
         if session_id:
-            self.memory = ConversationBufferMemory(
-                memory_key="chat_history",
-                chat_memory=RedisChatMessageHistory(
-                    session_id=str(session_id),
-                    url=os.getenv("REDIS_URL", "redis://localhost:6379"),
-                ),
-                return_messages=True,
-            )
+            model = "gpt-3.5-turbo"
+            summary_llm = ChatOpenAI(model=model, temperature=0)
+
+            self.memory = ConversationSummaryBufferMemory(
+            memory_key="chat_history",
+            chat_memory=RedisChatMessageHistory(
+                session_id=str(session_id),
+                url=os.getenv("REDIS_URL", "redis://localhost:6379"),
+                ttl=60 * 60 * 24,
+            ),
+            return_messages=True,
+            max_token_limit=500,
+            llm=summary_llm
+        )
 
     def _format_chat_history(self, messages):
         if not messages: return ""
@@ -62,5 +72,4 @@ class MemoryRunnable(Runnable):
                 {"input_text": merged_input["input_text"]},
                 {"output_text": output}
             )
-
         return output
