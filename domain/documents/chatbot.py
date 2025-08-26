@@ -8,7 +8,7 @@ from exceptions.character_word_set_length_exceeded_exception import CharacterWor
 class CharacterWordSet(BaseModel):
     question : str
     answer : str
-
+    contributor : str # user_id
 
 class ChatBot(Document):
     id : int

@@ -3,8 +3,8 @@ from api.schemas.request.chatbot_wordset_request import ChatBotWordIdsRequest
 from domain.repositories import chatbot_wordset_repo
 
 
-async def add(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest):
-    await chatbot_wordset_repo.save(character_id, chatbot_wordset_request)
+async def add(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest, user_id : str):
+    await chatbot_wordset_repo.save(character_id, chatbot_wordset_request, user_id)
 
 
 async def get_chatbot_wordset(cursor_id : int, size : int) -> CursorResponse:

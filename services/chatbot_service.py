@@ -132,7 +132,7 @@ if __name__ == "__main__":
 async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     # chatbot
     character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_wordset_ids)
-    chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer) for character_wordset in character_wordsets]
+    chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer, contributor=character_wordset.writer_id) for character_wordset in character_wordsets]
 
     await chatbot_repo.update_wordset(character_id, chatbot_wordsets)
 

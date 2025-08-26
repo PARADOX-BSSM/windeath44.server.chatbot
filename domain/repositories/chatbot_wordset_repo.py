@@ -7,11 +7,12 @@ from domain.documents.chatbot_wordset import ChatBotWordSet
 from beanie import operators as oper, SortDirection, PydanticObjectId
 
 
-async def save(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest):
+async def save(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest, user_id : str):
     chatbot_wordset = ChatBotWordSet(
         character_id=character_id,
         question= chatbot_wordset_request.question,
-        answer = chatbot_wordset_request.answer
+        answer = chatbot_wordset_request.answer,
+        writer_id=user_id
     )
     await chatbot_wordset.save()
 
