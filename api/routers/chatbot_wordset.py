@@ -3,12 +3,13 @@ from api.schemas.common.request.cursor_query import CursorQuery
 from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest, ChatBotWordIdsRequest
 from services import chatbot_wordset_service
+from api.depends.get_user_id import get_user_id
 
 router = APIRouter(prefix="/chatbots-wordset", tags=["chatbot_wordset"])
 
 @router.post("/{character_id}")
-async def chatbot_wordset(character_id : int, chatbot_wordset_request: ChatBotWordIdsRequest) -> BaseResponse:
-    await chatbot_wordset_service.add(character_id, chatbot_wordset_request)
+async def chatbot_wordset(character_id : int, chatbot_wordset_request: ChatBotWordIdsRequest, user_id : str = Depends(get_user_id)) -> BaseResponse:
+    await chatbot_wordset_service.add(character_id, chatbot_wordset_request, user_id)
     return BaseResponse(message="chatbot wordset successfully add")
 
 @router.get("/")

@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from api import api_router
 from core.db.mongo_db import init_mongodb, close_mongodb
@@ -11,7 +12,19 @@ async def lifespan(app : FastAPI):
     yield
     await close_mongodb(app)
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://10.129.59.65:5173", "http://10.129.59.65:5173", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(api_router)
 
 
@@ -41,3 +54,8 @@ async def root():
 @app.get("/hello/{name}")
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=4449)

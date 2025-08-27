@@ -6,6 +6,6 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
    content : str
 
-class ChatBotIdsRequest(BaseModel):
-   chatbot_ids: List[int]
-   # chatbot_ids: int = Field(..., alias="chatbotIds")
+class ChatBotWordSetIdsRequest(BaseModel):
+   chatbot_wordset_ids: List[str]
+   # chatbot_wordset_ids: int = Field(..., alias="chatbotIds")

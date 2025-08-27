@@ -4,13 +4,15 @@ from beanie.odm.operators.find.comparison import In
 
 from api.schemas.request.chatbot_wordset_request import ChatBotWordIdsRequest
 from domain.documents.chatbot_wordset import ChatBotWordSet
-from beanie import operators as oper, SortDirection
+from beanie import operators as oper, SortDirection, PydanticObjectId
 
-async def save(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest):
+
+async def save(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest, user_id : str):
     chatbot_wordset = ChatBotWordSet(
         character_id=character_id,
         question= chatbot_wordset_request.question,
-        answer = chatbot_wordset_request.answer
+        answer = chatbot_wordset_request.answer,
+        writer_id=user_id
     )
     await chatbot_wordset.save()
 
@@ -54,10 +56,12 @@ async def find_by_cursor_id_and_character_id(character_id : int, cursor_id : int
     return chatbots
 
 
-async def find_chatbot_wordests(chatbot_ids : List[int]) -> List[ChatBotWordSet]:
+async def find_chatbot_wordests(chatbot_wordset_ids : List[str]) -> List[ChatBotWordSet]:
+    ids = [PydanticObjectId(cid) for cid in chatbot_wordset_ids]
+
     chatbot_wordsets = await (
         ChatBotWordSet
-        .find(In(ChatBotWordSet.character_id, chatbot_ids))
+        .find(In(ChatBotWordSet.id, ids))
         .to_list()
     )
     return chatbot_wordsets
