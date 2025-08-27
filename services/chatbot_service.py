@@ -6,7 +6,7 @@ from langchain_core.documents import Document
 from adapter.grpc.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chat_request import ChatRequest
-from api.schemas.response.chatbot_response import ChatResponse
+from api.schemas.response.chatbot_response import ChatResponse, ChatBotResponse
 from domain.documents.chatbot import ChatBot, CharacterWordSet
 from domain.repositories.character_vector_store import CharacterVectorStore
 from adapter.embedder.embedder import Embedder
@@ -17,6 +17,7 @@ from domain.repositories import chatbot_repo, chatbot_wordset_repo
 from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotException
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 from sessions import session_id_generator
+from mapper import chatbot_mapper
 
 
 async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> ChatResponse:
@@ -137,10 +138,13 @@ async def modify(character_id : int, chatbot_wordset_ids : List[str]):
 
 
 async def find_by_pagenate(cursor_id : int, size : int) -> CursorResponse:
-    chatbot_response = await chatbot_repo.find(size) if cursor_id is None else await chatbot_repo.find_by_cursor_id(cursor_id, size)
-    has_next = len(chatbot_response) > size
+    chatbot_list = await chatbot_repo.find(size) if cursor_id is None else await chatbot_repo.find_by_cursor_id(cursor_id, size)
+    chatbot_response = [await chatbot_mapper.to_chatbot_response(chatbot=chatbot) for chatbot in chatbot_list]
+
+    has_next = len(chatbot_list) > size
     return CursorResponse(hasNext=has_next, values=chatbot_response[:size])
 
-async def get_chatbot(chatbot_id : int) -> ChatBot:
-    chatbot_response = await chatbot_repo.find_by_id(chatbot_id)
+async def get_chatbot(chatbot_id : int) -> ChatBotResponse:
+    chatbot = await chatbot_repo.find_by_id(chatbot_id)
+    chatbot_response = await chatbot_mapper.to_chatbot_response(chatbot=chatbot)
     return chatbot_response

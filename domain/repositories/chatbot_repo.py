@@ -6,6 +6,7 @@ from beanie import operators as oper, SortDirection
 from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest
 from domain.documents.chatbot import ChatBot, CharacterWordSet
 from domain.documents.chatbot_wordset import ChatBotWordSet
+from exceptions.not_found_chatbot_exception import NotFoundChatBotException
 
 
 async def save(character_id : int, character_name : Optional[str] = None, character_wordset : Optional[List[CharacterWordSet]] = None):
@@ -19,8 +20,10 @@ async def save(character_id : int, character_name : Optional[str] = None, charac
 
 
 async def find_by_id(character_id : int) -> ChatBot:
-    character = await ChatBot.find_one(ChatBot.id == character_id)
-    return character
+    chatbot = await ChatBot.find_one(ChatBot.id == character_id)
+    if chatbot is None:
+        raise NotFoundChatBotException(chatbot_id=character_id)
+    return chatbot
 
 async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWordSet]):
     character = await find_by_id(character_id)
