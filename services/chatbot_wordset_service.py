@@ -10,10 +10,10 @@ async def add(character_id : int, chatbot_wordset_request : ChatBotWordIdsReques
 async def get_chatbot_wordset(cursor_id : int, size : int) -> CursorResponse:
     chatbot_wordset = await chatbot_wordset_repo.find(size) if cursor_id is None else await chatbot_wordset_repo.find_by_cursor_id(cursor_id, size)
     has_next = len(chatbot_wordset) > size
-    return CursorResponse(hasNext=has_next, values=chatbot_wordset)
+    return CursorResponse(hasNext=has_next, values=chatbot_wordset[:size])
 
 
 async def get_chatbot_wordset_by_character(character_id : int, cursor_id : int, size : int) -> CursorResponse:
     chatbot_wordset = await chatbot_wordset_repo.find_by_character_id(character_id, size) if cursor_id is None else await chatbot_wordset_repo.find_by_cursor_id_and_character_id(character_id, cursor_id, size)
     has_next = len(chatbot_wordset) > size
-    return CursorResponse(hasNext=has_next, values=chatbot_wordset)
+    return CursorResponse(hasNext=has_next, values=chatbot_wordset[:size])

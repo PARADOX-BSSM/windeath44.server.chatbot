@@ -35,7 +35,7 @@ class Embedder:
         embeddings = await self.emb.aembed_documents([d.page_content for d in docs])
         for d, vec in zip(docs, embeddings):
             vectors.append({
-                "chatbot_id": str(uuid.uuid4()),
+                "id": str(uuid.uuid4()),
                 "values": vec,
                 "metadata": d.metadata
             })

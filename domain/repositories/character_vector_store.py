@@ -20,6 +20,7 @@ class CharacterVectorStore(PineconeVectorStore):
             await super().upsert_documents(docs=docs, embed_model=embed_model)
             return True
         except Exception as e:
+            print(str(e))
             raise UpsertPineconeFailedException(self.character_name)
 
     async def delete(self, embed_model : Embedder):

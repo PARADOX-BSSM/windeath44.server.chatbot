@@ -31,7 +31,7 @@ async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWo
 
 
 async def exists_by_id(character_id : int) -> bool:
-    chatbot = await find_by_id(character_id)
+    chatbot = await ChatBot.find_one(ChatBot.id == character_id)
     return bool(chatbot)
 
 
