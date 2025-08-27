@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from api.depends.get_user_id import get_user_id
 from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.common.request.cursor_query import CursorQuery
-from services import chat_hisotry_service
+from app.chat_history.service import chat_history_service
 
 router = APIRouter(prefix="/chatbots/history", tags=["chat-history"])
 

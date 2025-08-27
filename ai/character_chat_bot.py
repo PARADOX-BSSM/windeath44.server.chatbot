@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -7,8 +6,8 @@ from langchain_openai import ChatOpenAI
 
 from ai.llm import LLM
 from ai.memory.MemoryRunnable import MemoryRunnable
-from domain.documents.chatbot import CharacterWordSet
-from domain.repositories import chat_hisotry_repo
+from app.chatbot.document.chatbot import CharacterWordSet
+from app.chat_history.repository import chat_history_repo
 
 
 class CharacterChatBot(LLM):
@@ -104,7 +103,7 @@ class CharacterChatBot(LLM):
     async def ainvoke(self, input_text : str):
         input = {"input_text": input_text}
         output = await self.llm.ainvoke(input)
-        await chat_hisotry_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
+        await chat_history_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
         return output
 
 

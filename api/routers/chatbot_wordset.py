@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from api.schemas.common.request.cursor_query import CursorQuery
 from api.schemas.common.response.base_response import BaseResponse
-from api.schemas.request.chatbot_wordset_request import ChatBotWordSetRequest, ChatBotWordIdsRequest
-from services import chatbot_wordset_service
+from api.schemas.request.chatbot_wordset_request import ChatBotWordIdsRequest
+from app.chatbot_wordset.service import chatbot_wordset_service
 from api.depends.get_user_id import get_user_id
 
 router = APIRouter(prefix="/chatbots/wordset", tags=["chatbot_wordset"])

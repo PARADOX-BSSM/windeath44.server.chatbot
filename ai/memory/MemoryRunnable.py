@@ -1,11 +1,10 @@
 import os
 
-from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory, ConversationSummaryBufferMemory
+from langchain.memory import ConversationSummaryBufferMemory
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_core.runnables import Runnable
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from domain.repositories import chat_hisotry_repo
 
 load_dotenv()
 

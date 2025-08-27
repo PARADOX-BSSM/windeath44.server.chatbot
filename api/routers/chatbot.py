@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 
-from adapter.grpc.client.chatbot_grpc_client import ChatbotGrpcClient
+from core.grpcs.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.depends.get_user_id import get_user_id
 from api.schemas.common.request.cursor_query import CursorQuery
 from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chat_request import ChatRequest, ChatBotWordSetIdsRequest
-from services import chatbot_service
-from adapter.grpc.deps.chatbot_stub_dep import chatbot_stub_dep
+from app.chatbot.service import chatbot_service
+from core.grpcs.deps.chatbot_stub_dep import chatbot_stub_dep
 
 router = APIRouter(prefix="/chatbots", tags=["chatbot"])
 
