@@ -25,3 +25,6 @@ async def delete_by_session_id(chatbot_id : int, user_id : str):
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
     await chat_hisotry_repo.delete_by_session_id(session_id=session_id)
 
+
+async def delete_by_history_id(history_id : str):
+    await chat_hisotry_repo.delete_history_by_history_id(history_id=history_id)

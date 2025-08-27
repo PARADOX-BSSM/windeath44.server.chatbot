@@ -20,7 +20,12 @@ async def get_chat_history(chatbot_id : int, params : CursorQuery = Depends(), u
 
 # 세션 내 대화 내역 전체 삭제
 @router.delete("/{chatbot_id}")
-async def get_chat_history(chatbot_id : int, user_id : str = Depends(get_user_id)) -> BaseResponse:
+async def delete_session_history(chatbot_id : int, user_id : str = Depends(get_user_id)) -> BaseResponse:
     await chat_hisotry_service.delete_by_session_id(chatbot_id, user_id)
-    return BaseResponse(message="chatbot chat history successfully deleted")
+    return BaseResponse(message="chatbot chat session history successfully deleted")
 
+# 대화 내역 단일 삭제
+@router.delete("/{history_id}")
+async def delete_history_by_id(history_id : str) -> BaseResponse:
+    await chat_hisotry_service.delete_by_history_id(history_id)
+    return BaseResponse(message="chatbot chat history successfully deleted")
