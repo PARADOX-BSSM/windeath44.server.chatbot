@@ -21,7 +21,7 @@ async def get_chat_histories(chatbot_id : int, cursor_id : str, size : int, user
     return CursorResponse(hasNext=has_next, values=chat_histories)
 
 
-async def delete_by_id(chatbot_id : int, user_id : str):
+async def delete_by_session_id(chatbot_id : int, user_id : str):
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
-    await chat_hisotry_repo.delete_by_id(session_id=session_id)
+    await chat_hisotry_repo.delete_by_session_id(session_id=session_id)
 

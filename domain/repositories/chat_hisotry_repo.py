@@ -36,5 +36,5 @@ async def find_by_cursor_id(session_id: str, size: int, cursor_id: str) -> List[
     return chat_history
 
 
-# async def delete_by_id(session_id : str):
-#     await ChatHistory.delete()
+async def delete_by_session_id(session_id : str):
+    await ChatHistory.delete(Eq(ChatHistory.session_id, session_id))
