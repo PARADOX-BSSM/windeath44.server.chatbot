@@ -5,8 +5,9 @@ from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.common.request.cursor_query import CursorQuery
 from services import chat_hisotry_service
 
-router = APIRouter(prefix="/chat-history", tags=["chat-history"])
+router = APIRouter(prefix="/chatbots/history", tags=["chat-history"])
 
+# 대화 내역 가져오기
 @router.get("/{chatbot_id}")
 async def get_chat_history(chatbot_id : int, params : CursorQuery = Depends(), user_id : str = Depends(get_user_id)) -> BaseResponse:
     chat_history_response = await chat_hisotry_service.get_chat_histories(
@@ -16,3 +17,9 @@ async def get_chat_history(chatbot_id : int, params : CursorQuery = Depends(), u
         user_id
     )
     return BaseResponse(message="chatbot chat history successfully get", data=chat_history_response)
+
+# 단일 삭제
+@router.delete("/{chatbot_id}")
+async def get_chat_history(chatbot_id : int, user_id : str = Depends(get_user_id)) -> BaseResponse:
+    await chat_hisotry_service.delete_by_id(chatbot_id, user_id)
+    return BaseResponse(message="chatbot chat history successfully deleted")

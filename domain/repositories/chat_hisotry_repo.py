@@ -27,7 +27,7 @@ async def find(session_id: str, size: int) -> List[ChatHistory]:
 async def find_by_cursor_id(session_id: str, size: int, cursor_id: str) -> List[ChatHistory]:
     chat_history = (
         await ChatHistory.find(
-            LT(ChatHistory.id, ObjectId(cursor_id)), Eq(ChatHistory.sesion_id, session_id)
+            LT(ChatHistory.id, ObjectId(cursor_id)), Eq(ChatHistory.session_id, session_id)
         )
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
@@ -36,5 +36,5 @@ async def find_by_cursor_id(session_id: str, size: int, cursor_id: str) -> List[
     return chat_history
 
 
-
-
+# async def delete_by_id(session_id : str):
+#     await ChatHistory.delete()
