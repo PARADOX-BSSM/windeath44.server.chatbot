@@ -3,7 +3,6 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
-
 from adapter.grpc.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chat_request import ChatRequest
@@ -17,6 +16,7 @@ from ai.character_chat_bot import CharacterChatBot
 from domain.repositories import chatbot_repo, chatbot_wordset_repo
 from exceptions.already_exists_chatbot_exception import AlreadyExistsChatbotException
 from fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
+from sessions import session_id_generator
 
 
 async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> ChatResponse:
@@ -25,7 +25,7 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
 
     mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
 
-    session_id = "chat:" + str(chatbot_id) + user_id
+    session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
 
     chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)
     await chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)

@@ -4,5 +4,5 @@ from pydantic import BaseModel, Field
 
 
 class CursorQuery(BaseModel):
-    cursor_id: Optional[int] = Field(None, alias="cursorId")
+    cursor_id: Optional[int | str] = Field(None, alias="cursorId")
     size : Optional[int] = Field(10)
