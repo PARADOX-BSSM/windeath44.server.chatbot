@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class ChatbotResponse(BaseModel):
+class ChatResponse(BaseModel):
     answer : str = None

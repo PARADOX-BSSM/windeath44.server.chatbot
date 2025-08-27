@@ -35,6 +35,11 @@ async def modify_wordsets(chatbot_id : int, chatbot_request : ChatBotWordSetIdsR
     await chatbot_service.modify(chatbot_id, chatbot_request.chatbot_wordset_ids)
     return BaseResponse(message="successfully added wordset")
 
+@router.get("/{chatbot_id}")
+async def get_chat(chatbot_id: int) -> BaseResponse:
+    chatbot_response = await chatbot_service.get_chatbot(chatbot_id)
+    return BaseResponse(message="chatbot successfully retrieved", data=chatbot_response)
+
 # 챗봇 리스트 조회
 @router.get("/")
 async def list_chatbots(
