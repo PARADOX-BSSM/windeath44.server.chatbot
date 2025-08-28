@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from core.grpcs.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.depends.get_user_id import get_user_id
@@ -24,9 +24,11 @@ async def chat(
 @router.post("/generate/{character_id}")
 async def generate(
         character_id : int,
-        chatbot_grpc_client : ChatbotGrpcClient = Depends(chatbot_stub_dep)
+        description : str = Query(...),
+        chatbot_grpc_client : ChatbotGrpcClient = Depends(chatbot_stub_dep
+    )
 ) -> BaseResponse:
-    await chatbot_service.generate(character_id, chatbot_grpc_client)
+    await chatbot_service.generate(character_id, description, chatbot_grpc_client)
     return BaseResponse(message="chatbot successfully generated")
 
 # 챗봇 말투셋 추가(수정)
@@ -44,6 +46,7 @@ async def get_chat(chatbot_id: int) -> BaseResponse:
 @router.get("/")
 async def list_chatbots(
         params : CursorQuery = Depends(),
+        is_open : bool = Query(True, alias="isOpen"),
 ) -> BaseResponse:
-    cursor_response = await chatbot_service.find_by_pagenate(params.cursor_id, params.size)
+    cursor_response = await chatbot_service.find_by_pagenate(is_open, params.cursor_id, params.size)
     return BaseResponse(message="chatbot successfully get", data=cursor_response)

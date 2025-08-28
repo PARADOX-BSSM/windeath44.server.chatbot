@@ -4,7 +4,6 @@ from pydantic import field_validator, BaseModel, Field
 
 from app.chatbot_wordset.exception.character_word_set_length_exceeded_exception import CharacterWordSetLengthExceededException
 
-
 class CharacterWordSet(BaseModel):
     question : str
     answer : str
@@ -13,6 +12,8 @@ class CharacterWordSet(BaseModel):
 class ChatBot(Document):
     id : int
     name : str
+    description : str
+    is_open : bool
     character_wordset : List[CharacterWordSet] = Field(default_factory=list)
     contributors : List[str]
 

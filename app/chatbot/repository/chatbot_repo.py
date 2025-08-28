@@ -5,12 +5,14 @@ from app.chatbot.document.chatbot import ChatBot, CharacterWordSet
 from app.chatbot.exception.not_found_chatbot_exception import NotFoundChatBotException
 
 
-async def save(character_id : int, character_name : Optional[str] = None, character_wordset : Optional[List[CharacterWordSet]] = None):
+async def save(character_id : int, character_name : Optional[str] = None, description : str = None, character_wordset : Optional[List[CharacterWordSet]] = None):
     character = ChatBot(
         id = character_id,
         name=character_name,
+        description=description,
         character_wordset = character_wordset if character_wordset is not None else [],
-        contributors = []
+        contributors = [],
+        is_open=False
     )
     print(f"character wordset : {character.character_wordset}")
     await character.save()
@@ -35,18 +37,21 @@ async def exists_by_id(character_id : int) -> bool:
     return bool(chatbot)
 
 
-async def find(size : int) -> List[ChatBot]:
-    chatBotWordSet = (
-        await ChatBot.find_all()
+async def find(is_open : bool, size : int) -> List[ChatBot]:
+    chatbot = (
+        await ChatBot.find(ChatBot.is_open == is_open)
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatBotWordSet
+    return chatbot
 
-async def find_by_cursor_id(cursor_id : int, size : int) -> List[ChatBot]:
+async def find_by_cursor_id(is_open : bool, cursor_id : int, size : int) -> List[ChatBot]:
     chatbots = (
-        await ChatBot.find(oper.LT(ChatBot.id, cursor_id))
+        await ChatBot.find(
+            ChatBot.is_open == is_open,
+            oper.LT(ChatBot.id, cursor_id)
+        )
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()

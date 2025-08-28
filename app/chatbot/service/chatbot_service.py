@@ -57,7 +57,7 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
 
 
 
-async def generate(character_id : int, chatbot_grpc_client : ChatbotGrpcClient ):
+async def generate(character_id : int, description : str, chatbot_grpc_client : ChatbotGrpcClient):
     print("check exsists ...")
     exists_chatbot = await chatbot_repo.exists_by_id(character_id)
     if exists_chatbot: raise AlreadyExistsChatbotException(character_id=character_id)
@@ -81,7 +81,7 @@ async def generate(character_id : int, chatbot_grpc_client : ChatbotGrpcClient )
 
     print("saving character for mongodb ...")
     async with rollback_pinecone_on_mongo_failure(character_id=character_id, character_name=character_name):
-        await chatbot_repo.save(character_id=character_id, character_name=character_name)
+        await chatbot_repo.save(character_id=character_id, description=description, character_name=character_name)
 
     print("success!!!")
 
@@ -132,8 +132,8 @@ async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     await chatbot_repo.update_wordset(character_id, chatbot_wordsets, contributor)
 
 
-async def find_by_pagenate(cursor_id : int, size : int) -> CursorResponse:
-    chatbot_list = await chatbot_repo.find(size) if cursor_id is None else await chatbot_repo.find_by_cursor_id(cursor_id, size)
+async def find_by_pagenate(is_open : bool, cursor_id : int, size : int) -> CursorResponse:
+    chatbot_list = await chatbot_repo.find(is_open, size) if cursor_id is None else await chatbot_repo.find_by_cursor_id(is_open, cursor_id, size)
     chatbot_response = [await chatbot_mapper.to_chatbot_response(chatbot=chatbot) for chatbot in chatbot_list]
 
     has_next = len(chatbot_list) > size
