@@ -122,20 +122,14 @@ async def _upsert_character_document_for_pincone(character_id : int, character_n
     # pinecone 저장
     await character_pinecone_dao.upsert(docs=documents, embed_model=embedder)
 
-if __name__ == "__main__":
-    # asyncio.run(generate(character_id=5))
-
-    content="안졸려? 자고싶어 미치겠어"
-    asyncio.run(chat(chatbot_id=1, chat_request=ChatRequest(content=content)))
-
-    pass
-
 async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     # chatbot
     character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_wordset_ids)
+    contributor = {wordset.writer_id for wordset in character_wordsets}
+
     chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer, contributor=character_wordset.writer_id) for character_wordset in character_wordsets]
 
-    await chatbot_repo.update_wordset(character_id, chatbot_wordsets)
+    await chatbot_repo.update_wordset(character_id, chatbot_wordsets, contributor)
 
 
 async def find_by_pagenate(cursor_id : int, size : int) -> CursorResponse:
