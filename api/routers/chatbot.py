@@ -4,7 +4,7 @@ from core.grpcs.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.depends.get_user_id import get_user_id
 from api.schemas.common.request.cursor_query import CursorQuery
 from api.schemas.common.response.base_response import BaseResponse
-from api.schemas.request.chat_request import ChatRequest, ChatBotWordSetIdsRequest
+from api.schemas.request.chatbot_request import ChatRequest, ChatBotWordSetIdsRequest, ChatBotGenerateRequest
 from app.chatbot.service import chatbot_service
 from core.grpcs.deps.chatbot_stub_dep import chatbot_stub_dep
 
@@ -24,11 +24,11 @@ async def chat(
 @router.post("/generate/{character_id}")
 async def generate(
         character_id : int,
-        description : str = Query(...),
+        chatbot_generate_request : ChatBotGenerateRequest,
         chatbot_grpc_client : ChatbotGrpcClient = Depends(chatbot_stub_dep
     )
 ) -> BaseResponse:
-    await chatbot_service.generate(character_id, description, chatbot_grpc_client)
+    await chatbot_service.generate(character_id, chatbot_generate_request, chatbot_grpc_client)
     return BaseResponse(message="chatbot successfully generated")
 
 # 챗봇 말투셋 추가(수정)
