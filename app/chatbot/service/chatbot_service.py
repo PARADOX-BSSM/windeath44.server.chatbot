@@ -29,7 +29,7 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
 
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
 
-    chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)
+    chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.chatbot_wordset, session_id=session_id)
     await chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
 
     content = chat_request.content
@@ -141,7 +141,7 @@ async def find_by_pagenate(is_open : bool, cursor_id : int, size : int) -> Curso
 
 async def get_chatbot(chatbot_id : int) -> ChatBotResponse:
     chatbot = await chatbot_repo.find_by_id(chatbot_id)
-    chatbot_response = await chatbot_mapper.to_chatbot_response(chatbot=chatbot)
+    chatbot_response = await chatbot_mapper.to_chatbot_details_response(chatbot=chatbot)
     return chatbot_response
 
 

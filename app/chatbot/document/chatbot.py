@@ -14,10 +14,10 @@ class ChatBot(Document):
     name : str
     description : str
     is_open : bool
-    character_wordset : List[CharacterWordSet] = Field(default_factory=list)
+    chatbot_wordset : List[CharacterWordSet] = Field(default_factory=list)
     contributors : List[str]
 
-    @field_validator("character_wordset")
+    @field_validator("chatbot_wordset")
     def validate_character_wordset(cls, v):
         length = len(v)
         if  5 < length:
