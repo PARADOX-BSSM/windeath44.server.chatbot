@@ -1,7 +1,7 @@
 from app.chat_history.document.chat_history import ChatHistory
 from typing import List
 from beanie.operators import Eq, LT
-from beanie import SortDirection
+from beanie import SortDirection, operators as oper, PydanticObjectId
 from bson import ObjectId
 
 async def save(session_id : str, input_text : str, output_text : str):
@@ -32,8 +32,9 @@ async def find_by_cursor_id(session_id: str, size: int, cursor_id: str) -> List[
 
 
 async def delete_by_session_id(session_id : str):
-    await ChatHistory.delete(Eq(ChatHistory.session_id, session_id))
+    await ChatHistory.find(ChatHistory.session_id == session_id).delete()
 
 
 async def delete_history_by_history_id(history_id : str):
-    await ChatHistory.delete(Eq(ChatHistory.id, history_id))
+    object_history_id = PydanticObjectId(history_id)
+    await ChatHistory.find_one(ChatHistory.id == object_history_id).delete()
