@@ -9,4 +9,5 @@ class ChatResponse(BaseModel):
 class ChatBotResponse(BaseModel):
     chatbot_id : int
     name : str = None
+    description : str
     contributor : List[str]
