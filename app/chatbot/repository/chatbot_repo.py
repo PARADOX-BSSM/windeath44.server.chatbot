@@ -57,3 +57,10 @@ async def find_by_cursor_id(is_open : bool, cursor_id : int, size : int) -> List
         .to_list()
     )
     return chatbots
+
+
+async def toggle_open(chatbot_id : int) -> bool:
+    chatbot = await find_by_id(chatbot_id)
+    chatbot.is_open = not chatbot.is_open
+    await chatbot.save()
+    return chatbot.is_open

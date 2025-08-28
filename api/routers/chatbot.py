@@ -32,7 +32,7 @@ async def generate(
     return BaseResponse(message="chatbot successfully generated")
 
 # 챗봇 말투셋 추가(수정)
-@router.patch("/{chatbot_id}")
+@router.patch("/{chatbot_id}/wordset")
 async def modify_wordsets(chatbot_id : int, chatbot_request : ChatBotWordSetIdsRequest) -> BaseResponse:
     await chatbot_service.modify(chatbot_id, chatbot_request.chatbot_wordset_ids)
     return BaseResponse(message="successfully added wordset")
@@ -50,3 +50,9 @@ async def list_chatbots(
 ) -> BaseResponse:
     cursor_response = await chatbot_service.find_by_pagenate(is_open, params.cursor_id, params.size)
     return BaseResponse(message="chatbot successfully get", data=cursor_response)
+
+# 챗봇 is_open 필드 토글 수정
+@router.patch("/{chatbot_id}/open")
+async def open_chatbot(chatbot_id : int) -> BaseResponse:
+    is_open = await chatbot_service.toggle_open(chatbot_id)
+    return BaseResponse(message="chatbot successfully opened" if is_open else "chatbot successfully closed")

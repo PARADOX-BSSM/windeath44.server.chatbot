@@ -143,3 +143,8 @@ async def get_chatbot(chatbot_id : int) -> ChatBotResponse:
     chatbot = await chatbot_repo.find_by_id(chatbot_id)
     chatbot_response = await chatbot_mapper.to_chatbot_response(chatbot=chatbot)
     return chatbot_response
+
+
+async def toggle_open(chatbot_id : int) -> bool:
+    is_open = await chatbot_repo.toggle_open(chatbot_id)
+    return is_open
