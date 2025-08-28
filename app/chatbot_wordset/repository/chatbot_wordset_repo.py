@@ -18,42 +18,42 @@ async def save(character_id : int, chatbot_wordset_request : ChatBotWordIdsReque
 
 
 async def find(size : int) -> List[ChatBotWordSet]:
-    chatbots = (
+    chatbot_wordsets = (
         await ChatBotWordSet.find_all()
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatbots
+    return chatbot_wordsets
 
 async def find_by_cursor_id(cursor_id : int, size : int) -> List[ChatBotWordSet]:
-    chatbots = (
+    chatbot_wordsets = (
         await ChatBotWordSet.find(oper.LT(ChatBotWordSet.id, cursor_id))
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatbots
+    return chatbot_wordsets
 
 
 async def find_by_character_id(character_id : int, size : int) -> List[ChatBotWordSet]:
-    chatbots = (
+    chatbot_wordsets = (
         await ChatBotWordSet.find(oper.Eq(ChatBotWordSet.character_id, character_id))
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatbots
+    return chatbot_wordsets
 
 
 async def find_by_cursor_id_and_character_id(character_id : int, cursor_id : int, size : int) -> List[ChatBotWordSet]:
-    chatbots = (
+    chatbot_wordsets = (
         await ChatBotWordSet.find(oper.LT(ChatBotWordSet.id, cursor_id), oper.Eq(ChatBotWordSet.character_id, character_id))
         .sort(("_id", SortDirection.DESCENDING))
         .limit(size + 1)
         .to_list()
     )
-    return chatbots
+    return chatbot_wordsets
 
 
 async def find_chatbot_wordests(chatbot_wordset_ids : List[str]) -> List[ChatBotWordSet]:

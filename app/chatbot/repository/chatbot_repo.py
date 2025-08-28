@@ -6,7 +6,7 @@ from app.chatbot.exception.not_found_chatbot_exception import NotFoundChatBotExc
 
 
 async def save(character_id : int, character_name : Optional[str] = None, description : str = None, character_wordset : Optional[List[CharacterWordSet]] = None):
-    character = ChatBot(
+    chatbot = ChatBot(
         id = character_id,
         name=character_name,
         description=description,
@@ -14,8 +14,8 @@ async def save(character_id : int, character_name : Optional[str] = None, descri
         contributors = [],
         is_open=False
     )
-    print(f"character wordset : {character.character_wordset}")
-    await character.save()
+    print(f"character wordset : {chatbot.character_wordset}")
+    await chatbot.save()
 
 
 async def find_by_id(character_id : int) -> ChatBot:
