@@ -14,7 +14,7 @@ class ChatBot(Document):
     id : int
     name : str
     character_wordset : List[CharacterWordSet] = Field(default_factory=list)
-    contributors : Set[str]
+    contributors : List[str]
 
     @field_validator("character_wordset")
     def validate_character_wordset(cls, v):

@@ -10,7 +10,7 @@ async def save(character_id : int, character_name : Optional[str] = None, charac
         id = character_id,
         name=character_name,
         character_wordset = character_wordset if character_wordset is not None else [],
-        contributors = set()
+        contributors = []
     )
     print(f"character wordset : {character.character_wordset}")
     await character.save()
@@ -22,11 +22,11 @@ async def find_by_id(character_id : int) -> ChatBot:
         raise NotFoundChatBotException(chatbot_id=character_id)
     return chatbot
 
-async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWordSet], contributors : Set[str]):
+async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWordSet], contributors : List[str]):
     character = await find_by_id(character_id)
     await character.update(
         oper.Set({ChatBot.character_wordset : chatbot_wordsets}),
-        oper.AddToSet({ChatBot.contributors : {"$each" : list(contributors)}}),
+        oper.Push({ChatBot.contributors : {"$each" : contributors}}),
     )
 
 

@@ -125,7 +125,7 @@ async def _upsert_character_document_for_pincone(character_id : int, character_n
 async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     # chatbot
     character_wordsets = await chatbot_wordset_repo.find_chatbot_wordests(chatbot_wordset_ids)
-    contributor = {wordset.writer_id for wordset in character_wordsets}
+    contributor = [wordset.writer_id for wordset in character_wordsets]
 
     chatbot_wordsets = [CharacterWordSet(question=character_wordset.question, answer=character_wordset.answer, contributor=character_wordset.writer_id) for character_wordset in character_wordsets]
 
