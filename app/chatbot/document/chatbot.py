@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List
 from beanie import Document
 from pydantic import field_validator, BaseModel, Field
 
@@ -14,10 +14,10 @@ class ChatBot(Document):
     name : str
     description : str
     is_open : bool
-    chatbot_wordset : List[CharacterWordSet] = Field(default_factory=list)
+    character_wordset : List[CharacterWordSet] = Field(default_factory=list)
     contributors : List[str]
 
-    @field_validator("chatbot_wordset")
+    @field_validator("character_wordset")
     def validate_character_wordset(cls, v):
         length = len(v)
         if  5 < length:

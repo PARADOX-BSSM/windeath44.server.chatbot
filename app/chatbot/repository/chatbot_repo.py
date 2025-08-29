@@ -10,11 +10,11 @@ async def save(character_id : int, character_name : Optional[str] = None, descri
         id = character_id,
         name=character_name,
         description=description,
-        chatbot_wordset= character_wordset if character_wordset is not None else [],
+        character_wordset= character_wordset if character_wordset is not None else [],
         contributors = [],
         is_open=False
     )
-    print(f"character wordset : {chatbot.chatbot_wordset}")
+    print(f"character wordset : {chatbot.character_wordset}")
     await chatbot.save()
 
 
@@ -27,7 +27,7 @@ async def find_by_id(character_id : int) -> ChatBot:
 async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWordSet], contributors : List[str]):
     character = await find_by_id(character_id)
     await character.update(
-        oper.Set({ChatBot.chatbot_wordset : chatbot_wordsets}),
+        oper.Set({ChatBot.character_wordset : chatbot_wordsets}),
         oper.Push({ChatBot.contributors : {"$each" : contributors}}),
     )
 

@@ -12,10 +12,11 @@ class ChatBotResponse(BaseModel):
     description : str
     contributor : List[str]
 
-class CharacterWordSet(BaseModel):
+class CharacterWordSetResponse(BaseModel):
     question : str
     answer : str
     contributor : str # user_id
 
+
 class ChatBotDetailsResponse(ChatBotResponse):
-    chatbot_wordset : List[CharacterWordSet]
+    chatbot_wordset : List[CharacterWordSetResponse]

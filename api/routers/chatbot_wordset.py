@@ -5,7 +5,7 @@ from api.schemas.request.chatbot_wordset_request import ChatBotWordIdsRequest
 from app.chatbot_wordset.service import chatbot_wordset_service
 from api.depends.get_user_id import get_user_id
 
-router = APIRouter(prefix="/chatbots/wordset", tags=["chatbot_wordset"])
+router = APIRouter(prefix="/chatbots/wordset", tags=["character_wordset"])
 
 @router.post("/{character_id}")
 async def chatbot_wordset(character_id : int, chatbot_wordset_request: ChatBotWordIdsRequest, user_id : str = Depends(get_user_id)) -> BaseResponse:

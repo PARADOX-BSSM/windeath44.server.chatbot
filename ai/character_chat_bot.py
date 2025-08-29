@@ -80,7 +80,7 @@ class CharacterChatBot(LLM):
 
         async def __format_style_examples() -> str:
             """
-            CharacterWordSet(question, answer) 리스트를 few-shot 형식으로 변환.
+            CharacterWordSetResponse(question, answer) 리스트를 few-shot 형식으로 변환.
             """
             shots = []
             for w in self.character_wordset:

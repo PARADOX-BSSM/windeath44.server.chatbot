@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import List
 
-from api.schemas.response.chatbot_response import ChatBotResponse, ChatBotDetailsResponse
+from api.schemas.response.chatbot_response import ChatBotResponse, ChatBotDetailsResponse, CharacterWordSetResponse
 from app.chatbot.document.chatbot import ChatBot
 
 
@@ -14,8 +14,8 @@ async def to_chatbot_response(chatbot : ChatBot) -> ChatBotResponse:
 
 async def to_chatbot_details_response(chatbot : ChatBot) -> ChatBotDetailsResponse:
     sorted_contributors = await _sort_contributors_by_count(chatbot.contributors)
-
-    chatbot_detils_response = ChatBotDetailsResponse(chatbot_id=chatbot.id, name=chatbot.name, description=chatbot.description, contributor=sorted_contributors, chatbot_wordset=chatbot.chatbot_wordset)
+    chatbot_wordset = [CharacterWordSetResponse(question=wordset.question, answer=wordset.answer, contributor=wordset.contributor) for wordset in chatbot.character_wordset]
+    chatbot_detils_response = ChatBotDetailsResponse(chatbot_id=chatbot.id, name=chatbot.name, description=chatbot.description, contributor=sorted_contributors, chatbot_wordset=chatbot_wordset)
     return chatbot_detils_response
 
 
