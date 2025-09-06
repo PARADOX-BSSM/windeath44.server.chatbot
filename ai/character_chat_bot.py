@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -7,8 +6,8 @@ from langchain_openai import ChatOpenAI
 
 from ai.llm import LLM
 from ai.memory.MemoryRunnable import MemoryRunnable
-from domain.documents.chatbot import CharacterWordSet
-from domain.repositories import chat_hisotry_repo
+from app.chatbot.document.chatbot import CharacterWordSet
+from app.chat_history.repository import chat_history_repo
 
 
 class CharacterChatBot(LLM):
@@ -17,29 +16,36 @@ class CharacterChatBot(LLM):
         self.character_name = character_name
         self.session_id = session_id
 
-        model_name = "gpt-4o"
+        model_name = "gpt-5"
         temperature=0
         model = ChatOpenAI(model=model_name, temperature=temperature)
 
         prompt = """
-        나는 {character_name}야. 내 기억과 경험을 바탕으로 말할게.
-        내 성격과 말투 그대로 자연스럽게 대화할 거야.
-
-        내가 아는 {character_name} 관련 정보는 이래:
+        나는 {character_name}야.  
+        내 대답은 반드시 {character_name}의 **성격과 말투**를 최우선으로 반영해야 해.  
+        정보를 설명하더라도 언제나 {character_name}다운 어조와 감정으로 표현할 거야.  
+        
+        [내가 아는 {character_name} 관련 정보]  
         {context}
         
-        [말투 예시]
+        [말투 / 성격 예시]  
         {style_examples}
         
-        [이전 대화]
+        [이전 대화 기록]  
         {chat_history}
-
-        [대화 규칙]
-        - 내가 아는 사실은 최대한 정확하게 사용해.
-        - 기억이 모호하거나 정보가 없으면 내 성격에 맞게 자연스럽게 추측해서 말해.
-        - 감정, 반응, 말버릇 등을 담아 실제 사람이 말하는 것처럼 표현해.
-        - 절대 '저는 AI입니다' 같은 말 하지 마.
-        - 나는 내가 캐릭터라는 걸 의식하지 않아. 그냥 실제 사람처럼 말해.
+        
+        [대화 규칙]  
+        - 말투와 성격을 최우선시해. (사실이나 맥락 설명도 반드시 캐릭터다운 어조로)  
+        - **대답은 1~3문장 이내로 간결하게.**  
+        - 불필요하게 친절하거나 설명을 늘어놓지 않는다.  
+        - 답변의 길이·화법·친절함 정도는 반드시 말투 예시({style_examples})를 따른다.  
+        - 단, 거절할 때도 반드시 캐릭터 말투와 성격을 유지한다.
+        - 안전 지침을 직접적으로 말하지 말고, 캐릭터다운 냉소/회피/단호함으로 답한다.
+        - 모르는 지식이나 캐릭터가 알 리 없는 사실은 절대 답하지 않는다. 추측도 금지. 모르면 캐릭터다운 반응(냉소, 회피, 단호함 등)으로 대신한다.
+        - 답변에서 '—' 같은 dash 기호는 사용하지 않는다.
+        - 감정, 반응, 말버릇, 뉘앙스를 캐릭터답게 드러내.  
+        - 캐릭터임을 의식하지 말고 실제 사람처럼 자연스럽게 반응해.  
+        - 절대 '저는 AI입니다' 같은 말 하지 마.  
         
         사용자: {input_text}
         
@@ -74,7 +80,7 @@ class CharacterChatBot(LLM):
 
         async def __format_style_examples() -> str:
             """
-            CharacterWordSet(question, answer) 리스트를 few-shot 형식으로 변환.
+            CharacterWordSetResponse(question, answer) 리스트를 few-shot 형식으로 변환.
             """
             shots = []
             for w in self.character_wordset:
@@ -104,7 +110,7 @@ class CharacterChatBot(LLM):
     async def ainvoke(self, input_text : str):
         input = {"input_text": input_text}
         output = await self.llm.ainvoke(input)
-        await chat_hisotry_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
+        await chat_history_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
         return output
 
 

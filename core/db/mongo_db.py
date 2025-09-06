@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 
-from domain.documents.chat_history import ChatHistory
-from domain.documents.chatbot import ChatBot
-from domain.documents.chatbot_wordset import ChatBotWordSet
+from app.chat_history.document.chat_history import ChatHistory
+from app.chatbot.document.chatbot import ChatBot
+from app.chatbot_wordset.document.chatbot_wordset import ChatBotWordSet
 
 load_dotenv()
 
