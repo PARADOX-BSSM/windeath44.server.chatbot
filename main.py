@@ -4,7 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from api import api_router
 from core.db.mongo_db import init_mongodb, close_mongodb
-from exceptions.business_exception import BusinessException
+from core.exceptions.business_exception import BusinessException
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
@@ -12,8 +12,6 @@ async def lifespan(app : FastAPI):
     yield
     await close_mongodb(app)
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 app = FastAPI(lifespan=lifespan)
 
