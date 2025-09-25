@@ -62,7 +62,7 @@ motor==3.7.1
 multidict==6.6.4
 MyApplication==0.1.0
 mypy_extensions==1.1.0
-nadf==0.1.27
+nadf==0.1.28
 numpy==2.3.2
 openai==1.100.1
 orjson==3.11.2
