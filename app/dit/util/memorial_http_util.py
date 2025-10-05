@@ -24,3 +24,13 @@ async def write_memorial_comment(
         json=body,
         headers=headers
     )
+
+
+async def get_memorial_content(memorial_id: int):
+    response = await memorial_http_util.get(endpoint=f"/{memorial_id}")
+    return response.json().get("data", {})
+
+if __name__ == "__main__":
+    import asyncio
+    response = asyncio.run(get_memorial_content(103))
+    print(response)

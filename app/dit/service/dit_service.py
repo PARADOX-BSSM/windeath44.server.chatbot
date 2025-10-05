@@ -26,14 +26,19 @@ async def write_memorial(character_id : int, memorial_id : int):
     # 3. 챗봇 응답 받기
     # 4. 글 작성 요청 보내기
 
+    # 추모관 글 조회
+    memorial_content = await memorial_http_util.get_memorial_content(memorial_id=memorial_id)
+
+    # prompt 구성
     chat_request = ChatRequest(
         content=WRITE_MEMORIAL_PROMPT
     )
 
+
     # chatbot 응답 받기
     chatbot_response = await chatbot_service.chat(chatbot_id=character_id, chat_request=chat_request, user_id=str(memorial_id))
 
-    # memorial 요청 보내기
+    # memorial 글 작성
     response = await memorial_http_util.write_memorial_comment(user_id=str(character_id), memorial_id=memorial_id, content=chatbot_response.answer)
     return response
 
