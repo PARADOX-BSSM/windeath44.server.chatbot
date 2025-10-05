@@ -2,6 +2,7 @@ import json
 
 from dotenv import load_dotenv
 from api.schemas.request.chatbot_request import ChatRequest
+from api.schemas.response.chatbot_response import ChatResponse
 from app.chatbot.service import chatbot_service
 import os
 
@@ -27,7 +28,7 @@ WRITE_MEMORIAL_PROMPT = """
 위 내용을 읽고, 당신의 감정이 자연스럽게 추모 댓글을 작성하세요.  
 """
 
-async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_client : ChatbotGrpcClient):
+async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_client : ChatbotGrpcClient) -> ChatResponse:
     # 1. 추모관 조회
     # 1.1 추모관 글 조회
     # 1.2 추모관 캐릭터 조회
@@ -40,11 +41,6 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
 
     # 추모관 캐릭터 조회
     memorial_character = await chatbot_grpc_client.get_character(character_id=memorial_content["characterId"])
-    # animeId = 1
-    # animeName = 2
-    # name = 3
-    # content = 4
-    # state = 5
 
     # prompt 구성
     prompt = (
@@ -65,7 +61,8 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
 
     # memorial 글 작성
     response = await memorial_http_util.write_memorial_comment(user_id=str(character_id), memorial_id=memorial_id, content=chatbot_response.answer)
-    return response
+    print("추모관으로부터 받은 응답 : " + response)
+    return chatbot_response
 
 
 

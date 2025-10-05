@@ -14,5 +14,5 @@ async def write_tribute(
     # memorial id 랜덤이라 가정
     character_id = 1
     memorial_id = 1
-    await dit_service.write_memorial(character_id, memorial_id, chatbot_grpc_client)
-    return BaseResponse(message="")
+    comment_response = await dit_service.write_memorial(character_id, memorial_id, chatbot_grpc_client)
+    return BaseResponse(message="Tribute successfully written", data=comment_response)
