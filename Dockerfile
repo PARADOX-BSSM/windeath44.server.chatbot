@@ -17,9 +17,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# 포트 노출 (예: 8000)
-EXPOSE 8000
-
-# 실행 커맨드 (예: uvicorn main:app --host 0.0.0.0 --port 8000)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4449"]
