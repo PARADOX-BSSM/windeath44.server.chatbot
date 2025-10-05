@@ -26,7 +26,6 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
     chatbot_name = chatbot.name
 
     mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
-
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
 
     chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)

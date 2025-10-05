@@ -8,7 +8,10 @@ class HTTPUtil:
         self.timeout = timeout
 
     def _build_url(self, endpoint: str) -> str:
-        return f"{self.base_url}/{endpoint.lstrip('/')}"
+        url = self.base_url
+        if not url.startswith(('http://', 'https://')):
+            url = f"http://{url}"
+        return f"{url}/{endpoint.lstrip('/')}"
 
     async def get(
         self,
