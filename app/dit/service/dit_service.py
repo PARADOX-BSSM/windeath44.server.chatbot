@@ -67,13 +67,5 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
     response = await memorial_http_util.write_memorial_comment(user_id=str(character_id), memorial_id=memorial_id, content=chatbot_response.answer)
     return response
 
-if __name__ == '__main__':
-    import asyncio
-    import pprint
-    response = asyncio.run(write_memorial(character_id=1, memorial_id=103))
-    print(response)
-    print("-------------------")
-    pprint(response)
-
 
 
