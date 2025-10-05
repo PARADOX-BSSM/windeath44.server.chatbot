@@ -61,7 +61,7 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
 
     # memorial 글 작성
     response = await memorial_http_util.write_memorial_comment(user_id=str(character_id), memorial_id=memorial_id, content=chatbot_response.answer)
-    print("추모관으로부터 받은 응답 : " + response)
+    print("추모관 댓글 작성 응답 : " + response)
     return chatbot_response
 
 
