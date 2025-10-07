@@ -30,6 +30,11 @@ async def get_memorial_content(memorial_id: int):
     response = await memorial_http_util.get(endpoint=f"/{memorial_id}")
     return response.json().get("data", {})
 
+
+async def get_memorials_by_comment_count(size: int = 10):
+    response = await memorial_http_util.get(endpoint="/comment/count", params={"size": size})
+    return response.json().get("data", [])
+
 if __name__ == "__main__":
     import asyncio
     response = asyncio.run(get_memorial_content(103))
