@@ -19,7 +19,7 @@ async def write_tribute(
     if not random_chatbot:
         raise NoAvailableChatbotException()
 
-    character_id = random_chatbot.id
+    character_id = random_chatbot["_id"]
 
     # 댓글 수가 적은 memorial 10개 조회 후 랜덤 선택
     memorials = await get_memorials_by_comment_count(size=10)
@@ -27,6 +27,7 @@ async def write_tribute(
         raise NoAvailableChatbotException()
 
     memorial_id = random.choice(memorials)["memorialId"]
+    print(memorial_id)
 
     comment_response = await dit_service.write_memorial(character_id, memorial_id, chatbot_grpc_client)
     return BaseResponse(message="Tribute successfully written", data=comment_response)
