@@ -26,6 +26,7 @@ async def write_tribute(
     if not memorials:
         raise NoAvailableChatbotException()
 
+    print(memorials)
     memorial_id = random.choice(memorials)["memorialId"]
     print(memorial_id)
 

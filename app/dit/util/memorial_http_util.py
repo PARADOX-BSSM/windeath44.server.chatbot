@@ -31,6 +31,17 @@ async def get_memorial_content(memorial_id: int):
     return response.json().get("data", {})
 
 
+
+async def get_popular_comments(memorial_id: int, user_id: str, size: int = 10):
+    headers = {"user-id": user_id}
+    params = {"size": size}
+    response = await memorial_http_util.get(
+        endpoint=f"/comment/{memorial_id}/popular",
+        params=params,
+        headers=headers
+    )
+    return response.json().get("data", [])
+
 async def get_memorials_by_comment_count(size: int = 10):
     response = await memorial_http_util.get(endpoint="/comment/count", params={"size": size})
     return response.json().get("data", [])

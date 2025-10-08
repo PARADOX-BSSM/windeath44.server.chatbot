@@ -25,7 +25,10 @@ WRITE_MEMORIAL_PROMPT = """
 [받은 절 횟수]
 {bow}
 
-위 내용을 읽고, 당신의 감정이 자연스럽게 추모 댓글을 작성하세요.  
+[인기 댓글]
+{popular_comments}
+
+위 내용을 읽고, 인기 댓글을 참고하여 당신의 감정이 자연스럽게 추모 댓글을 작성하세요.  
 """
 
 async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_client : ChatbotGrpcClient) -> ChatResponse:
@@ -38,11 +41,24 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
 
     # 추모관 글 조회
     memorial_content = await memorial_http_util.get_memorial_content(memorial_id=memorial_id)
+    
+    # 인기 댓글 조회
+    popular_comments = await memorial_http_util.get_popular_comments(
+        memorial_id=memorial_id, 
+        user_id=str(character_id),
+        size=5
+    )
 
     # 추모관 캐릭터 조회
     memorial_character = await chatbot_grpc_client.get_character(character_id=memorial_content["characterId"])
 
     # prompt 구성
+    # 인기 댓글 포맷팅
+    popular_comments_text = "".join([
+        f"- {comment.get('content', '')} (작성자: {comment.get('userId', '알 수 없음')}, 좋아요 {comment.get('likes', 0)}개, {comment.get('createdAt', '날짜 정보 없음')})\n"
+        for comment in popular_comments
+    ]) if popular_comments else "인기 댓글이 없습니다."
+    
     prompt = (
         WRITE_MEMORIAL_PROMPT
         .replace("{content}", memorial_content["content"])
@@ -50,6 +66,7 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
         .replace("{name}", memorial_character.name)
         .replace("{anime_name}", memorial_character.animeName)
         .replace("{saying}", memorial_character.content)
+        .replace("{popular_comments}", popular_comments_text)
     )
     print(prompt)
     chat_request = ChatRequest(
