@@ -76,7 +76,7 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
     # chatbot 응답 받기
     chatbot_response = await chatbot_service.chat(chatbot_id=character_id, chat_request=chat_request, user_id=str(memorial_id))
 
-    chatbot = await chatbot_service._get_chatbot(chatbot_id=character_id)
+    chatbot = await chatbot_service.get_chatbot(chatbot_id=character_id)
     # 추모관에 표시되는 chatbot id
     memorial_chatbot_user_id = f"official-{chatbot.name}"
 

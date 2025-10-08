@@ -37,6 +37,9 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
 
     return ChatResponse(answer=response)
 
+async def get_chatbot(chatbot_id : int) -> ChatBot:
+    chatbot = await _get_chatbot(chatbot_id)
+    return chatbot
 
 async def _get_chatbot(chatbot_id: int) -> ChatBot:
     chatbot = await chatbot_repo.find_by_id(chatbot_id)
