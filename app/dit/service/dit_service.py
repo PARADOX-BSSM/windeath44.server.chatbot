@@ -52,7 +52,7 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
     # 추모관 캐릭터 조회
     memorial_character = await chatbot_grpc_client.get_character(character_id=memorial_content["characterId"])
 
-    # prompt 구성
+    # 프롬프트 구성
     # 인기 댓글 포맷팅
     popular_comments_text = "".join([
         f"- {comment.get('content', '')} (작성자: {comment.get('userId', '알 수 없음')}, 좋아요 {comment.get('likes', 0)}개, {comment.get('createdAt', '날짜 정보 없음')})\n"
@@ -76,8 +76,12 @@ async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_cli
     # chatbot 응답 받기
     chatbot_response = await chatbot_service.chat(chatbot_id=character_id, chat_request=chat_request, user_id=str(memorial_id))
 
+    chatbot = await chatbot_service._get_chatbot(chatbot_id=character_id)
+    # 추모관에 표시되는 chatbot id
+    memorial_chatbot_user_id = f"official-{chatbot.name}"
+
     # memorial 글 작성
-    response = await memorial_http_util.write_memorial_comment(user_id=str(character_id), memorial_id=memorial_id, content=chatbot_response.answer)
+    response = await memorial_http_util.write_memorial_comment(user_id=memorial_chatbot_user_id, memorial_id=memorial_id, content=chatbot_response.answer)
     return chatbot_response
 
 
