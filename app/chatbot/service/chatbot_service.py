@@ -3,6 +3,8 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
 from langchain_core.documents import Document
+
+from core.grpcs.client import UserGrpcClient
 from core.grpcs.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.schemas.common.response.cursor_response import CursorResponse
 from api.schemas.request.chatbot_request import ChatRequest, ChatBotGenerateRequest
@@ -16,14 +18,16 @@ from ai.character_chat_bot import CharacterChatBot
 from app.chatbot_wordset.repository import chatbot_wordset_repo
 from app.chatbot.repository import chatbot_repo
 from app.chatbot.exception.already_exists_chatbot_exception import AlreadyExistsChatbotException
+from app.chatbot.exception.insufficient_token_exception import InsufficientTokenException
 from core.fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 from core.sessions import session_id_generator
 from app.chatbot.mapper import chatbot_mapper
 
 
-async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> ChatResponse:
-    # grpc로 유저 서버와 통신
-    # 유저의 remain_token
+async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user_grpc_client : UserGrpcClient) -> ChatResponse:
+    remain_token = await user_grpc_client.get_user_remain_token(user_id=user_id)
+
+    content = chat_request.content
 
     chatbot = await _get_chatbot(chatbot_id)
     chatbot_name = chatbot.name
@@ -31,14 +35,33 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> C
     mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
 
-    chatbot = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)
-    await chatbot.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
+    chatbot_instance = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset, session_id=session_id)
 
-    content = chat_request.content
-    response = await chatbot.ainvoke(content)
-    print(response)
+    await chatbot_instance.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
 
-    return ChatResponse(answer=response)
+    # 실행 전 토큰 사용량 예측
+    estimated_tokens = await chatbot_instance.estimate_prompt_tokens(content)
+    print(f"Estimated tokens: {estimated_tokens}, Remain tokens: {remain_token}")
+    
+    # 토큰 부족 체크
+    if estimated_tokens > remain_token:
+        raise InsufficientTokenException(
+            required_tokens=estimated_tokens,
+            remain_tokens=remain_token
+        )
+
+    # 채팅 실행 및 토큰 사용량 측정
+    result = await chatbot_instance.ainvoke(content)
+    answer = result["answer"]
+    token_usage = result["token_usage"]
+    
+    print(f"Answer: {answer}")
+    print(f"Token Usage: {token_usage}")
+    
+    # TODO: 채팅 이벤트를 Kafka에 발행
+    # await publish_chat_event(chatbot_id, user_id, session_id, content, answer, token_usage)
+
+    return ChatResponse(answer=answer)
 
 async def get_chatbot(chatbot_id : int) -> ChatBot:
     chatbot = await _get_chatbot(chatbot_id)
