@@ -84,16 +84,16 @@ class CharacterChatBot(LLM):
 
             return "\n".join(chunks)
 
-        async def __format_style_examples() -> str:
+        def __format_style_examples() -> str:
             """
             CharacterWordSetResponse(question, answer) 리스트를 few-shot 형식으로 변환.
             """
             shots = []
             for w in self.character_wordset:
-                q = (w.question or "").strip().replace("\n", " ")
+                q = (w.question or "").strip().replace("", " ")
                 a = (w.answer or "").strip()
-                shots.append(f"사용자: {q}\n나: {a}")
-            return "\n\n".join(shots)
+                shots.append(f"사용자: {q}나: {a}")
+            return "".join(shots)
 
         print(self.output_type)
 
@@ -181,11 +181,18 @@ class CharacterChatBot(LLM):
         )
         
         # 5. 토큰 수 계산
-        estimated_tokens = count_tokens(prompt_text)
+        estimated_prompt_tokens = count_tokens(prompt_text)
         
-        # 6. 여유분 추가 (completion tokens 예상치: 평균 50~200 토큰)
-        # 안전하게 200 토큰을 추가
-        estimated_total = estimated_tokens + 200
+        # 6. 보정 및 completion tokens 추가
+        # 실제 측정 결과 예측값이 실제보다 약 1.7배 큼 (예측 7819 vs 실제 4525)
+        # 보정 계수 적용 (0.6 ~ 0.7)
+        corrected_prompt_tokens = int(estimated_prompt_tokens * 0.65)
+        
+        # completion tokens 예상치 (실제 평균 743, 안전하게 1000으로)
+        estimated_completion_tokens = 1000
+        estimated_total = corrected_prompt_tokens + estimated_completion_tokens
+        
+        print(f"[Token Estimation] Raw: {estimated_prompt_tokens}, Corrected: {corrected_prompt_tokens}, Completion: {estimated_completion_tokens}, Total: {estimated_total}")
         
         return estimated_total
 

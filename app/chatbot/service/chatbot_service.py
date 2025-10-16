@@ -22,9 +22,12 @@ from app.chatbot.exception.insufficient_token_exception import InsufficientToken
 from core.fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 from core.sessions import session_id_generator
 from app.chatbot.mapper import chatbot_mapper
+from app.chatbot.event.chat_event_publisher import publish_chat_event
+from core.events.event_publisher import EventPublisher
+import time
 
 
-async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user_grpc_client : UserGrpcClient) -> ChatResponse:
+async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user_grpc_client : UserGrpcClient, event_publisher: EventPublisher) -> ChatResponse:
     remain_token = await user_grpc_client.get_user_remain_token(user_id=user_id)
 
     content = chat_request.content
@@ -50,16 +53,31 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user
             remain_tokens=remain_token
         )
 
-    # 채팅 실행 및 토큰 사용량 측정
+    # 채팅 실행 및 토큰 사용량 측정 (시간 측정)
+    start_time = time.time()
     result = await chatbot_instance.ainvoke(content)
+    response_time_ms = int((time.time() - start_time) * 1000)
+    
     answer = result["answer"]
     token_usage = result["token_usage"]
     
     print(f"Answer: {answer}")
     print(f"Token Usage: {token_usage}")
+    print(f"Response time: {response_time_ms}ms")
     
-    # TODO: 채팅 이벤트를 Kafka에 발행
-    # await publish_chat_event(chatbot_id, user_id, session_id, content, answer, token_usage)
+    # 채팅 이벤트를 Kafka에 발행
+    await publish_chat_event(
+        publisher=event_publisher,
+        chatbot_id=chatbot_id,
+        user_id=user_id,
+        session_id=session_id,
+        content=content,
+        answer=answer,
+        token_usage=token_usage,
+        success=True,
+        response_time_ms=response_time_ms,
+        model_name=chatbot_instance.model_name,
+    )
 
     return ChatResponse(answer=answer)
 

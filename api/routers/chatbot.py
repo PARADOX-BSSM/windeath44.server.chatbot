@@ -9,6 +9,8 @@ from api.schemas.request.chatbot_request import ChatRequest, ChatBotWordSetIdsRe
 from app.chatbot.service import chatbot_service
 from core.grpcs.deps.chatbot_stub_dep import chatbot_stub_dep
 from core.grpcs.deps.user_stub_dep import user_stub_dep
+from core.events.deps import get_event_publisher
+from core.events.event_publisher import EventPublisher
 
 router = APIRouter(prefix="/chatbots", tags=["chatbot"])
 
@@ -19,8 +21,9 @@ async def chat(
         chat_request : ChatRequest,
         user_id : str = Depends(get_user_id),
         user_grpc_client : UserGrpcClient = Depends(user_stub_dep),
+        event_publisher: EventPublisher = Depends(get_event_publisher),
     ) -> BaseResponse:
-    chatbot_response = await chatbot_service.chat(chatbot_id, chat_request, user_id, user_grpc_client)
+    chatbot_response = await chatbot_service.chat(chatbot_id, chat_request, user_id, user_grpc_client, event_publisher)
     return BaseResponse(message="chatbot successfully answered", data=chatbot_response)
 
 # 캐릭터 챗봇 생성
