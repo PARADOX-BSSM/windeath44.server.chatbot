@@ -160,10 +160,10 @@ class CharacterChatBot(LLM):
         style_examples = "\n\n".join(shots)
         
         # 3. chat_history 가져오기
-        # MemoryRunnable에서 실제 히스토리를 가져와야 하지만,
-        # 간단하게 추정 (평균 5턴, 각 100자)
+        # 3. chat_history 가져오기
+        # 최근 10개의 대화 이력 조회
         from app.chat_history.repository import chat_history_repo
-        history_records = await chat_history_repo.find_by_session_id(self.session_id, limit=10)
+        history_records = await chat_history_repo.find(self.session_id, size=10)
         
         chat_history_parts = []
         for record in history_records:

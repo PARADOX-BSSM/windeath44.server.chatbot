@@ -2,12 +2,6 @@ from core.grpcs.gen import user_pb2_grpc, user_pb2
 
 
 class UserGrpcClient:
-    """
-    User 서비스와 통신하는 gRPC 클라이언트
-    
-    유저의 remain token 정보를 조회합니다.
-    """
-    
     def __init__(self, stub: user_pb2_grpc.UserServiceStub):
         self._stub = stub
 
