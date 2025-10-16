@@ -22,6 +22,9 @@ from app.chatbot.mapper import chatbot_mapper
 
 
 async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str) -> ChatResponse:
+    # grpc로 유저 서버와 통신
+    # 유저의 remain_token
+
     chatbot = await _get_chatbot(chatbot_id)
     chatbot_name = chatbot.name
 
