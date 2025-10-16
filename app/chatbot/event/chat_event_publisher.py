@@ -18,27 +18,7 @@ async def publish_chat_event(
     response_time_ms: Optional[int] = None,
     model_name: str = "gpt-5"
 ) -> bool:
-    """
-    챗봇 채팅 이벤트를 Kafka에 발행합니다.
-    
-    Args:
-        publisher: EventPublisher 인스턴스
-        chatbot_id: 챗봇 ID
-        user_id: 사용자 ID
-        session_id: 세션 ID
-        content: 사용자 입력
-        answer: 챗봇 응답
-        token_usage: 토큰 사용량 정보
-        success: 성공 여부
-        error_message: 에러 메시지 (실패 시)
-        response_time_ms: 응답 시간 (밀리초)
-        model_name: 사용된 LLM 모델 이름
-        
-    Returns:
-        bool: 발행 성공 여부
-    """
-    
-    # 이벤트 데이터 구성 (avro 스키마에 맞춤)
+
     event = {
         "event_id": str(uuid.uuid4()),
         "event_type": "chat_completed" if success else "chat_failed",

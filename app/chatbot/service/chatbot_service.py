@@ -81,7 +81,38 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user
 
     return ChatResponse(answer=answer)
 
-async def get_chatbot(chatbot_id : int) -> ChatBot:
+
+async def dit_chat(chatbot_id: int, chat_request: ChatRequest, user_id: str) -> ChatResponse:
+    content = chat_request.content
+    chatbot = await _get_chatbot(chatbot_id)
+    chatbot_name = chatbot.name
+
+    mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
+    session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
+
+    chatbot_instance = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset,
+                                        session_id=session_id)
+
+    await chatbot_instance.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
+
+    estimated_tokens = await chatbot_instance.estimate_prompt_tokens(content)
+    print(f"Estimated tokens: {estimated_tokens}")
+
+    # 채팅 실행 및 토큰 사용량 측정 (시간 측정)
+    start_time = time.time()
+    result = await chatbot_instance.ainvoke(content)
+    response_time_ms = int((time.time() - start_time) * 1000)
+
+    answer = result["answer"]
+    token_usage = result["token_usage"]
+
+    print(f"Answer: {answer}")
+    print(f"Token Usage: {token_usage}")
+    print(f"Response time: {response_time_ms}ms")
+
+    return ChatResponse(answer=answer)
+
+async def find_chatbot(chatbot_id : int) -> ChatBot:
     chatbot = await _get_chatbot(chatbot_id)
     return chatbot
 

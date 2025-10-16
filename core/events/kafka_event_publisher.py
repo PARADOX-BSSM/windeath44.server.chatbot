@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 class KafkaEventPublisher(EventPublisher):
     """
     Kafka Event Publisher 구현체 (Adapter 패턴의 Adapter)
-    
-    aiokafka 라이브러리를 사용하여 EventPublisher 인터페이스를 구현합니다.
+
     """
     
     def __init__(
