@@ -17,6 +17,7 @@ class KafkaSettings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # .env 파일의 다른 필드들 무시
 
 
 @lru_cache()

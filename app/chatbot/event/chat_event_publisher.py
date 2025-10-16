@@ -19,10 +19,8 @@ async def publish_chat_event(
     model_name: str = "gpt-5"
 ) -> bool:
 
+    # 이벤트 데이터 구성 (avro 스키마에 정확히 맞춤)
     event = {
-        "event_id": str(uuid.uuid4()),
-        "event_type": "chat_completed" if success else "chat_failed",
-        "timestamp": int(time.time() * 1000),  # milliseconds
         "chatbot_id": chatbot_id,
         "user_id": user_id,
         "session_id": session_id,
@@ -31,13 +29,10 @@ async def publish_chat_event(
         "content_token_count": token_usage.get("prompt_tokens", 0),
         "answer_token_count": token_usage.get("completion_tokens", 0) if success else None,
         "total_token_count": token_usage.get("total_tokens", 0),
-        "retriever_used": True,
-        "retriever_docs_count": None,  # TODO: retriever에서 가져온 문서 수 추가
         "success": success,
         "error_message": error_message,
         "response_time_ms": response_time_ms,
-        "model_name": model_name,
-        "metadata": None
+        "model_name": model_name
     }
     
     # Kafka 토픽에 발행
@@ -48,5 +43,5 @@ async def publish_chat_event(
         topic=topic,
         message=event,
         key=key,
-        headers={"event_type": event["event_type"]}
+
     )
