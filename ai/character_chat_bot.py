@@ -1,13 +1,15 @@
-from typing import List
+from typing import List, Dict, Any
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI
 
 from ai.llm import LLM
+from ai.callbacks.token_counter_callback import TokenCounterCallback
 from ai.memory.MemoryRunnable import MemoryRunnable
 from app.chatbot.document.chatbot import CharacterWordSet
 from app.chat_history.repository import chat_history_repo
+from core.util.token_util import count_tokens
 
 
 class CharacterChatBot(LLM):
@@ -15,6 +17,7 @@ class CharacterChatBot(LLM):
         self.character_wordset = character_wordset
         self.character_name = character_name
         self.session_id = session_id
+        self.token_counter = TokenCounterCallback()
 
         model_name = "gpt-5"
         temperature=0
@@ -57,6 +60,9 @@ class CharacterChatBot(LLM):
         super().__init__(model_name=model_name, temperature=temperature, model=model, prompt=prompt, input_variables=input_variables)
 
     async def build_chain(self, mmr_retriever : VectorStoreRetriever, similarity_retriever : VectorStoreRetriever):
+        # retriever 저장 (토큰 예측에 사용)
+        self._mmr_retriever = mmr_retriever
+        self._similarity_retriever = similarity_retriever
         async def __hybrid_retrieve(query_dict: str) -> str:
             query = query_dict["input_text"] if isinstance(query_dict, dict) else str(query_dict)
 
@@ -78,16 +84,16 @@ class CharacterChatBot(LLM):
 
             return "\n".join(chunks)
 
-        async def __format_style_examples() -> str:
+        def __format_style_examples() -> str:
             """
             CharacterWordSetResponse(question, answer) 리스트를 few-shot 형식으로 변환.
             """
             shots = []
             for w in self.character_wordset:
-                q = (w.question or "").strip().replace("\n", " ")
+                q = (w.question or "").strip().replace("", " ")
                 a = (w.answer or "").strip()
-                shots.append(f"사용자: {q}\n나: {a}")
-            return "\n\n".join(shots)
+                shots.append(f"사용자: {q}나: {a}")
+            return "".join(shots)
 
         print(self.output_type)
 
@@ -107,10 +113,121 @@ class CharacterChatBot(LLM):
         core_chain = MemoryRunnable(self.session_id, chain, save=True)
         self.llm = core_chain
 
-    async def ainvoke(self, input_text : str):
+    async def estimate_prompt_tokens(self, input_text: str) -> int:
+        """
+        LLM 실행 전에 프롬프트 토큰 수를 예측합니다.
+        
+        Args:
+            input_text: 사용자 입력
+            
+        Returns:
+            예상 프롬프트 토큰 수
+        """
+        if not hasattr(self, 'llm') or self.llm is None:
+            raise RuntimeError("build_chain()을 먼저 호출해야 합니다.")
+        
+        # 1. context 예측 (RAG 검색 결과)
+        # 실제로 retriever를 실행해서 가져와야 정확함
+        query = input_text
+        if hasattr(self, '_mmr_retriever') and hasattr(self, '_similarity_retriever'):
+            sim_docs = self._similarity_retriever.get_relevant_documents(query)
+            mmr_docs = self._mmr_retriever.get_relevant_documents(query)
+            
+            seen, merged = set(), []
+            for d in sim_docs + mmr_docs:
+                if d.page_content not in seen:
+                    merged.append(d)
+                    seen.add(d.page_content)
+            
+            chunks = []
+            for d in merged:
+                page = d.metadata.get("page", "?")
+                src = d.metadata.get("source", "")
+                text = d.page_content.strip().replace("\n", " ")
+                chunks.append(f"[p{page}][{src}] {text[:1200]}")
+            
+            context = "\n".join(chunks)
+        else:
+            # retriever가 없으면 평균적인 크기로 추정 (약 2000자)
+            context = "추정된 context 내용" * 100
+        
+        # 2. style_examples 생성
+        shots = []
+        for w in self.character_wordset:
+            q = (w.question or "").strip().replace("\n", " ")
+            a = (w.answer or "").strip()
+            shots.append(f"사용자: {q}\n나: {a}")
+        style_examples = "\n\n".join(shots)
+        
+        # 3. chat_history 가져오기
+        # 3. chat_history 가져오기
+        # 최근 10개의 대화 이력 조회
+        from app.chat_history.repository import chat_history_repo
+        history_records = await chat_history_repo.find(self.session_id, size=10)
+        
+        chat_history_parts = []
+        for record in history_records:
+            chat_history_parts.append(f"사용자: {record.input_text}")
+            chat_history_parts.append(f"AI: {record.output_text}")
+        chat_history = "\n".join(chat_history_parts)
+        
+        # 4. 프롬프트 템플릿 채우기
+        prompt_text = self.prompt.format(
+            character_name=self.character_name,
+            context=context,
+            style_examples=style_examples,
+            chat_history=chat_history,
+            input_text=input_text
+        )
+        
+        # 5. 토큰 수 계산
+        estimated_prompt_tokens = count_tokens(prompt_text)
+        
+        # 6. 보정 및 completion tokens 추가
+        # 실제 측정 결과 예측값이 실제보다 약 1.7배 큼 (예측 7819 vs 실제 4525)
+        # 보정 계수 적용 (0.6 ~ 0.7)
+        corrected_prompt_tokens = int(estimated_prompt_tokens * 0.65)
+        
+        # completion tokens 예상치 (실제 평균 743, 안전하게 1000으로)
+        estimated_completion_tokens = 1000
+        estimated_total = corrected_prompt_tokens + estimated_completion_tokens
+        
+        print(f"[Token Estimation] Raw: {estimated_prompt_tokens}, Corrected: {corrected_prompt_tokens}, Completion: {estimated_completion_tokens}, Total: {estimated_total}")
+        
+        return estimated_total
+
+    async def ainvoke(self, input_text : str) -> Dict[str, Any]:
+        """
+        채팅을 실행하고 토큰 사용량 정보를 반환합니다.
+        
+        Args:
+            input_text: 사용자 입력
+            
+        Returns:
+            {
+                "answer": 챗봇 응답,
+                "token_usage": {
+                    "prompt_tokens": 입력 토큰 수,
+                    "completion_tokens": 출력 토큰 수,
+                    "total_tokens": 총 토큰 수
+                }
+            }
+        """
         input = {"input_text": input_text}
-        output = await self.llm.ainvoke(input)
+        
+        # 토큰 카운터 초기화
+        self.token_counter.reset()
+        
+        # callback과 함께 LLM 실행
+        output = await self.llm.ainvoke(input, config={"callbacks": [self.token_counter]})
+        
+        # 채팅 히스토리 저장
         await chat_history_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
-        return output
+        
+        # 토큰 사용량 정보와 함께 반환
+        return {
+            "answer": output,
+            "token_usage": self.token_counter.get_token_usage()
+        }
 
 

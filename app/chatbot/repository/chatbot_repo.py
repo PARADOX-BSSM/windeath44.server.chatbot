@@ -64,3 +64,8 @@ async def toggle_open(chatbot_id : int) -> bool:
     chatbot.is_open = not chatbot.is_open
     await chatbot.save()
     return chatbot.is_open
+
+
+async def find_random(is_open : bool = True) -> Optional[ChatBot]:
+    chatbot = await ChatBot.find(ChatBot.is_open == is_open).aggregate([{"$sample": {"size": 1}}]).to_list()
+    return chatbot[0] if chatbot else None
