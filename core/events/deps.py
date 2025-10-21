@@ -5,12 +5,12 @@ from pydantic_settings import BaseSettings
 
 from core.events.event_publisher import EventPublisher
 from core.events.kafka_event_publisher import KafkaEventPublisher
-
+import os
 
 class KafkaSettings(BaseSettings):
     """Kafka 설정"""
-    kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_client_id: str = "fastapi-event-publisher"
+    kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+    kafka_client_id: str = os.getenv("KAFKA_PRODUCER_ID", "fastapi-event-publisher")
     kafka_compression_type: str = "gzip"
     kafka_acks: str = "all"
     
