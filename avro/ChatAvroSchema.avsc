@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "ChatEvent",
-  "namespace": "com.chatbot.events",
+  "name": "ChatAvroSchema",
+  "namespace": "windeath44.server.chatbot.avro",
   "doc": "챗봇 채팅 이벤트 스키마",
   "fields": [
     {
