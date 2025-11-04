@@ -32,6 +32,34 @@ async def update_wordset(character_id : int, chatbot_wordsets : List[CharacterWo
     )
 
 
+
+async def add_wordset(character_id: int, character_wordset: CharacterWordSet, contributor: str):
+    """챗봇에 wordset 추가"""
+    character = await find_by_id(character_id)
+    
+    # wordset 추가
+    await character.update(
+        oper.Push({ChatBot.character_wordset: character_wordset}),
+        oper.AddToSet({ChatBot.contributors: contributor})
+    )
+
+
+
+async def remove_wordset(character_id: int, question: str, answer: str):
+    """챗봇에서 특정 wordset 제거"""
+    character = await find_by_id(character_id)
+    
+    # question과 answer가 일치하는 wordset 제거
+    await character.update(
+        oper.Pull({
+            ChatBot.character_wordset: {
+                "question": question,
+                "answer": answer
+            }
+        })
+    )
+
+
 async def exists_by_id(character_id : int) -> bool:
     chatbot = await ChatBot.find_one(ChatBot.id == character_id)
     return bool(chatbot)

@@ -49,7 +49,7 @@ async def get_chat(chatbot_id: int) -> BaseResponse:
     return BaseResponse(message="chatbot successfully retrieved", data=chatbot_response)
 
 # 챗봇 리스트 조회
-@router.get("/")
+@router.get("")
 async def list_chatbots(
         params : CursorQuery = Depends(),
         is_open : bool = Query(True, alias="isOpen"),

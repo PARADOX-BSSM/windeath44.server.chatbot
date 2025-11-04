@@ -18,6 +18,7 @@ from ai.character_chat_bot import CharacterChatBot
 from app.chatbot_wordset.repository import chatbot_wordset_repo
 from app.chatbot.repository import chatbot_repo
 from app.chatbot.exception.already_exists_chatbot_exception import AlreadyExistsChatbotException
+from app.chatbot.exception.no_content_found_exception import NoContentFoundException
 from app.chatbot.exception.insufficient_token_exception import InsufficientTokenException
 from core.fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 from core.sessions import session_id_generator
@@ -131,9 +132,6 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
     similarity_retriever = character_pinecone_dao.retriever(embed_model=embedder, top_k=5, search_type="similarity")
     return mmr_retriever, similarity_retriever
 
-
-
-
 async def generate(character_id : int, chatbot_generate_request : ChatBotGenerateRequest, chatbot_grpc_client : ChatbotGrpcClient):
     print("check exsists ...")
     exists_chatbot = await chatbot_repo.exists_by_id(character_id)
@@ -146,7 +144,10 @@ async def generate(character_id : int, chatbot_generate_request : ChatBotGenerat
     print("crawling  ...")
     namuwiki_list = await _crawl_namuwiki(character_name)
     # title, content, level을 튜플의 요소로 갖고 있음.
-
+    
+    if not namuwiki_list:
+        raise NoContentFoundException(character_name=character_name)
+    
     print("generating pdf ...")
     pdf_bytes = await _generate_pdf(character_name, namuwiki_list)
 
@@ -180,14 +181,33 @@ async def _generate_pdf(character_name : str, namuwiki_list : List[Tuple[str, st
 
 
 async def _crawl_namuwiki(character_name : str) -> List[Tuple[str, str, str]]:
+    print(f"Attempting to crawl Namuwiki for character: '{character_name}'")
     crawler = Crawler()
-    namuwiki_list = await crawler.get_namuwiki_list(name=character_name)
-    return namuwiki_list
 
+    try:
+        namuwiki_list = await crawler.get_namuwiki_list(name=character_name)
+        print(f"Crawler returned {len(namuwiki_list) if namuwiki_list else 0} items")
 
-async def _get_character_name_by_gRPC(character_id: int) -> str:
-    character_name = "미야조노 카오리"  # 캐릭터 이름 DB에서 조회 (grpcs 이용 anime 서버랑 통신)
-    return character_name
+        if not namuwiki_list:
+            print(f"Warning: No namuwiki content found for character '{character_name}'")
+            print(f"This could be due to:")
+            print(f"  1. Character name not found in Namuwiki")
+            print(f"  2. Network connectivity issues")
+            print(f"  3. Character name format/encoding issues")
+            raise NoContentFoundException(character_name=character_name)
+        
+        return namuwiki_list
+    
+    except IndexError as e:
+        # 크롤러 내부에서 deque가 비어있을 때 발생
+        print(f"IndexError caught while crawling Namuwiki for '{character_name}': {e}")
+        print(f"Possible causes:")
+        print(f"  1. No search results found in Namuwiki")
+        print(f"  2. HTML parsing failed (structure changed)")
+        print(f"  3. Network error or access blocked")
+        print(f"  4. Character name encoding issue")
+        raise NoContentFoundException(character_name=character_name) from e
+
 
 
 async def _upsert_character_document_for_pincone(character_id : int, character_name : str, documents : List[Document]):
