@@ -12,7 +12,7 @@ async def chatbot_wordset(character_id : int, chatbot_wordset_request: ChatBotWo
     await chatbot_wordset_service.add(character_id, chatbot_wordset_request, user_id)
     return BaseResponse(message="chatbot wordset successfully add")
 
-@router.get("/")
+@router.get("")
 async def get_chatbot_wordset(params : CursorQuery = Depends()) -> BaseResponse:
     chatbot_response = await chatbot_wordset_service.get_chatbot_wordset(params.cursor_id, params.size)
     return BaseResponse(message="chatbot wordset successfully get", data=chatbot_response)
