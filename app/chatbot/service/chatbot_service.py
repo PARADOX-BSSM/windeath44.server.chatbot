@@ -1,4 +1,6 @@
 import asyncio
+
+from dotenv import load_dotenv
 from langchain_core.vectorstores import VectorStoreRetriever
 from nadf.crawler import Crawler
 from nadf.pdf import PDF
@@ -26,6 +28,8 @@ from app.chatbot.mapper import chatbot_mapper
 from app.chatbot.event.chat_event_publisher import publish_chat_event
 from core.events.event_publisher import EventPublisher
 import time
+
+load_dotenv()
 
 
 async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user_grpc_client : UserGrpcClient, event_publisher: EventPublisher) -> ChatResponse:
@@ -133,13 +137,14 @@ async def __get_retriever(character_id : int, character_name : str) -> Tuple[Vec
     return mmr_retriever, similarity_retriever
 
 async def generate(character_id : int, chatbot_generate_request : ChatBotGenerateRequest, chatbot_grpc_client : ChatbotGrpcClient):
-    print("check exsists ...")
-    exists_chatbot = await chatbot_repo.exists_by_id(character_id)
-    if exists_chatbot: raise AlreadyExistsChatbotException(character_id=character_id)
-
-    print("generating chatbot ...")
-    character = await chatbot_grpc_client.get_character(character_id)
-    character_name = character.name
+    # print("check exsists ...")
+    # exists_chatbot = await chatbot_repo.exists_by_id(character_id)
+    # if exists_chatbot: raise AlreadyExistsChatbotException(character_id=character_id)
+    #
+    # print("generating chatbot ...")
+    # character = await chatbot_grpc_client.get_character(character_id)
+    # character_name = character.name
+    character_name = "우치하 이타치"
 
     print("crawling  ...")
     namuwiki_list = await _crawl_namuwiki(character_name)
@@ -147,6 +152,8 @@ async def generate(character_id : int, chatbot_generate_request : ChatBotGenerat
     
     if not namuwiki_list:
         raise NoContentFoundException(character_name=character_name)
+
+    print(namuwiki_list)
     
     print("generating pdf ...")
     pdf_bytes = await _generate_pdf(character_name, namuwiki_list)
