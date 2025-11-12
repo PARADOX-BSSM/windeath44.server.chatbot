@@ -2,6 +2,8 @@ aiohappyeyeballs==2.6.1
 aiohttp==3.12.15
 aiohttp-retry==2.9.1
 aiokafka==0.11.0
+confluent-kafka[avro]==2.6.1
+fastavro==1.9.7
 aiosignal==1.4.0
 annotated-types==0.7.0
 anyio==4.10.0
