@@ -36,7 +36,7 @@ async def publish_chat_event(
     }
     
     # Kafka 토픽에 발행
-    topic = "chatbot-chat-events"
+    topic = "chatbot-chat-request"
     key = f"{chatbot_id}:{user_id}"  # 같은 사용자의 채팅은 같은 파티션으로
     
     return await publisher.publish(
