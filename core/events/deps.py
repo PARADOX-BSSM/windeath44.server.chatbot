@@ -1,10 +1,12 @@
 from typing import Optional
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
 from core.events.event_publisher import EventPublisher
 from core.events.kafka_event_publisher import KafkaEventPublisher
+from core.events.avro_serializer import AvroSerializer, AsyncAvroSerializer
 import os
 
 class KafkaSettings(BaseSettings):
@@ -13,7 +15,8 @@ class KafkaSettings(BaseSettings):
     kafka_client_id: str = os.getenv("KAFKA_PRODUCER_ID", "fastapi-event-publisher")
     kafka_compression_type: str = "gzip"
     kafka_acks: str = "all"
-    
+    schema_registry_url: str = os.getenv("SCHEMA_REGISTRY_URL", "http://localhost:8081")
+
     class Config:
         env_file = ".env"
         case_sensitive = False
@@ -33,24 +36,37 @@ _kafka_publisher: Optional[KafkaEventPublisher] = None
 async def get_event_publisher() -> EventPublisher:
     """
     FastAPI dependency로 사용할 Event Publisher를 반환합니다.
-    
+
     Usage:
         @app.post("/example")
         async def example(publisher: EventPublisher = Depends(get_event_publisher)):
             await publisher.publish("my-topic", {"key": "value"})
     """
     global _kafka_publisher
-    
+
     if _kafka_publisher is None:
         settings = get_kafka_settings()
+
+        # Avro Schema 파일 경로
+        schema_file = Path(__file__).parent.parent.parent / "avro" / "ChatAvroSchema.avsc"
+
+        # Avro Serializer 생성
+        avro_serializer = AvroSerializer(
+            schema_registry_url=settings.schema_registry_url,
+            schema_file_path=str(schema_file),
+            subject="ChatAvroSchema-value"
+        )
+        async_avro_serializer = AsyncAvroSerializer(avro_serializer)
+
         _kafka_publisher = KafkaEventPublisher(
             bootstrap_servers=settings.kafka_bootstrap_servers,
             client_id=settings.kafka_client_id,
             compression_type=settings.kafka_compression_type,
-            acks=settings.kafka_acks
+            acks=settings.kafka_acks,
+            value_serializer=async_avro_serializer
         )
         await _kafka_publisher.connect()
-    
+
     return _kafka_publisher
 
 

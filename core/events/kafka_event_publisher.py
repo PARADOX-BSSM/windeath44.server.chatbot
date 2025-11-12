@@ -1,12 +1,13 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
 from core.events.event_publisher import EventPublisher
+from core.events.avro_serializer import AsyncAvroSerializer
 
 
 logger = logging.getLogger(__name__)
@@ -26,11 +27,12 @@ class KafkaEventPublisher(EventPublisher):
         max_batch_size: int = 16384,
         linger_ms: int = 10,
         acks: str | int = "all",
+        value_serializer: Optional[Callable] = None,
         **kwargs
     ):
         """
         Kafka Event Publisher를 초기화합니다.
-        
+
         Args:
             bootstrap_servers: Kafka 브로커 주소 (문자열 또는 리스트)
             client_id: 클라이언트 식별자
@@ -38,6 +40,7 @@ class KafkaEventPublisher(EventPublisher):
             max_batch_size: 배치 최대 크기 (bytes)
             linger_ms: 배치를 보내기 전 대기 시간 (ms)
             acks: 응답 확인 레벨 (0, 1, 'all')
+            value_serializer: 값 직렬화 함수 (기본값: JSON)
             **kwargs: 추가 AIOKafkaProducer 설정
         """
         self.bootstrap_servers = bootstrap_servers
@@ -46,8 +49,9 @@ class KafkaEventPublisher(EventPublisher):
         self.max_batch_size = max_batch_size
         self.linger_ms = linger_ms
         self.acks = acks
+        self.value_serializer = value_serializer
         self.extra_config = kwargs
-        
+
         self._producer: Optional[AIOKafkaProducer] = None
         self._connected = False
     
@@ -58,6 +62,9 @@ class KafkaEventPublisher(EventPublisher):
             return
         
         try:
+            # 기본 serializer는 JSON
+            serializer = self.value_serializer or (lambda v: json.dumps(v).encode('utf-8'))
+
             self._producer = AIOKafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
                 client_id=self.client_id,
@@ -65,7 +72,7 @@ class KafkaEventPublisher(EventPublisher):
                 max_batch_size=self.max_batch_size,
                 linger_ms=self.linger_ms,
                 acks=self.acks,
-                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                value_serializer=serializer,
                 **self.extra_config
             )
             await self._producer.start()
