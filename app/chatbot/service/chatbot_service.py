@@ -33,7 +33,7 @@ load_dotenv()
 
 
 async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user_grpc_client : UserGrpcClient, event_publisher: EventPublisher) -> ChatResponse:
-    # remain_token = await user_grpc_client.get_user_remain_token(user_id=user_id)
+    remain_token = await user_grpc_client.get_user_remain_token(user_id=user_id)
 
     content = chat_request.content
 
@@ -48,15 +48,15 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user
     await chatbot_instance.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
 
     # 실행 전 토큰 사용량 예측
-    # estimated_tokens = await chatbot_instance.estimate_prompt_tokens(content)
-    # print(f"Estimated tokens: {estimated_tokens}, Remain tokens: {remain_token}")
+    estimated_tokens = await chatbot_instance.estimate_prompt_tokens(content)
+    print(f"Estimated tokens: {estimated_tokens}, Remain tokens: {remain_token}")
     
     # 토큰 부족 체크
-    # if estimated_tokens > remain_token:
-    #     raise InsufficientTokenException(
-    #         required_tokens=estimated_tokens,
-    #         remain_tokens=remain_token
-    #     )
+    if estimated_tokens > remain_token:
+        raise InsufficientTokenException(
+            required_tokens=estimated_tokens,
+            remain_tokens=remain_token
+        )
 
     # 채팅 실행 및 토큰 사용량 측정 (시간 측정)
     start_time = time.time()
