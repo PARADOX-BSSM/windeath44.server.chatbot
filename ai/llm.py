@@ -5,9 +5,9 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.output_parsers import BaseOutputParser, StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import Runnable
-from langchain_deepseek import ChatDeepSeek
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
 load_dotenv()
