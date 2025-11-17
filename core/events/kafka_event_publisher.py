@@ -62,9 +62,8 @@ class KafkaEventPublisher(EventPublisher):
             return
         
         try:
-            # 기본 serializer는 JSON
-            serializer = self.value_serializer or (lambda v: json.dumps(v).encode('utf-8'))
-
+            # value_serializer는 publish 메서드에서 수동으로 처리
+            # (AsyncAvroSerializer는 async callable이므로 여기서 전달할 수 없음)
             self._producer = AIOKafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
                 client_id=self.client_id,
@@ -72,7 +71,7 @@ class KafkaEventPublisher(EventPublisher):
                 max_batch_size=self.max_batch_size,
                 linger_ms=self.linger_ms,
                 acks=self.acks,
-                value_serializer=serializer,
+                value_serializer=None,  # 수동으로 직렬화 처리
                 **self.extra_config
             )
             await self._producer.start()
@@ -109,10 +108,18 @@ class KafkaEventPublisher(EventPublisher):
             key_bytes = key.encode('utf-8') if key else None
             headers_list = [(k, v.encode('utf-8')) for k, v in headers.items()] if headers else None
             
+            # 메시지 직렬화 (value_serializer가 있으면 사용, 없으면 JSON)
+            if self.value_serializer:
+                # AsyncAvroSerializer는 async callable
+                value_bytes = await self.value_serializer(message)
+            else:
+                # 기본 JSON 직렬화
+                value_bytes = json.dumps(message).encode('utf-8')
+            
             # 메시지 전송
             result = await self._producer.send_and_wait(
                 topic=topic,
-                value=message,
+                value=value_bytes,
                 key=key_bytes,
                 headers=headers_list
             )
@@ -162,9 +169,15 @@ class KafkaEventPublisher(EventPublisher):
                 key = keys[idx] if keys else None
                 key_bytes = key.encode('utf-8') if key else None
                 
+                # 메시지 직렬화
+                if self.value_serializer:
+                    value_bytes = await self.value_serializer(message)
+                else:
+                    value_bytes = json.dumps(message).encode('utf-8')
+                
                 future = await self._producer.send(
                     topic=topic,
-                    value=message,
+                    value=value_bytes,
                     key=key_bytes
                 )
                 futures.append(future)
