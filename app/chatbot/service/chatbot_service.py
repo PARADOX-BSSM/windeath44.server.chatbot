@@ -64,10 +64,13 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user
     response_time_ms = int((time.time() - start_time) * 1000)
     
     answer = result["answer"]
-    token_usage = result["token_usage"]
+    token_usage = result.get("token_usage", {})
     
     print(f"Answer: {answer}")
     print(f"Token Usage: {token_usage}")
+    print(f"  - prompt_tokens: {token_usage.get('prompt_tokens', 0)}")
+    print(f"  - completion_tokens: {token_usage.get('completion_tokens', 0)}")
+    print(f"  - total_tokens: {token_usage.get('total_tokens', 0)}")
     print(f"Response time: {response_time_ms}ms")
     
     # 채팅 이벤트를 Kafka에 발행
@@ -112,10 +115,13 @@ async def dit_chat(chatbot_id: int, chat_request: ChatRequest, user_id: str) -> 
     response_time_ms = int((time.time() - start_time) * 1000)
 
     answer = result["answer"]
-    token_usage = result["token_usage"]
-
+    token_usage = result.get("token_usage", {})
+    
     print(f"Answer: {answer}")
     print(f"Token Usage: {token_usage}")
+    print(f"  - prompt_tokens: {token_usage.get('prompt_tokens', 0)}")
+    print(f"  - completion_tokens: {token_usage.get('completion_tokens', 0)}")
+    print(f"  - total_tokens: {token_usage.get('total_tokens', 0)}")
     print(f"Response time: {response_time_ms}ms")
 
     return ChatResponse(answer=answer)
