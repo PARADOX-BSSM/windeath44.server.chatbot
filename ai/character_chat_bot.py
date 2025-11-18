@@ -40,8 +40,8 @@ class CharacterChatBot(LLM):
         self.session_id = session_id
         self.token_counter = TokenCounterCallback()
 
-        provider = os.getenv("LLM_PROVIDER")
-        model_name = os.getenv("LLM_MODEL")
+        provider = os.getenv("LLM_PROVIDER", "openai")
+        model_name = os.getenv("LLM_MODEL", "gpt-5")
         temperature=0
         model = MODEL_FACTORY[provider](model_name, temperature=temperature)
 
