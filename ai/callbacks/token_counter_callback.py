@@ -1,6 +1,8 @@
+import os
 from typing import Any, Dict, List, Optional
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
+import os
 
 
 class TokenCounterCallback(BaseCallbackHandler):
@@ -27,6 +29,7 @@ class TokenCounterCallback(BaseCallbackHandler):
         """LLM 호출이 시작될 때 호출됩니다."""
         print(f"[TokenCounterCallback] on_llm_start called with {len(prompts)} prompts")
         pass
+
     
     def on_llm_end(
         self, 
@@ -35,41 +38,66 @@ class TokenCounterCallback(BaseCallbackHandler):
     ) -> None:
         """
         LLM 호출이 완료될 때 호출됩니다.
+        OpenAI, Google Gemini, Groq 등 다양한 provider 지원
         
         Args:
             response: LLM 응답 결과 (토큰 사용량 정보 포함)
         """
-        # OpenAI API의 경우 token_usage 키에 토큰 정보가 있음
         token_usage = {}
+        provider = os.getenv("LLM_PROVIDER", "openai")
         
-        # llm_output에서 먼저 시도
-        if response.llm_output is not None:
-            token_usage = response.llm_output.get("token_usage", {})
+        if provider == "google":
+            # Google Gemini API: usage_metadata 사용
+            if response.llm_output and "usage_metadata" in response.llm_output:
+                usage_metadata = response.llm_output.get("usage_metadata", {})
+                token_usage = {
+                    "prompt_tokens": usage_metadata.get("prompt_token_count", 0),
+                    "completion_tokens": usage_metadata.get("candidates_token_count", 0),
+                    "total_tokens": usage_metadata.get("total_token_count", 0)
+                }
+        elif provider == "openai":
+            # OpenAI API: token_usage 사용
+            if response.llm_output and "token_usage" in response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+        elif provider == "groq":
+            # Groq API: token_usage 사용 (OpenAI 호환)
+            if response.llm_output and "token_usage" in response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+
+            # Groq가 generation_info에 저장하는 경우도 확인
+            elif response.generations:
+                for generation_list in response.generations:
+                    for generation in generation_list:
+                        if hasattr(generation, 'generation_info') and generation.generation_info:
+                            gen_token_usage = generation.generation_info.get("token_usage", {})
+                            if gen_token_usage:
+                                token_usage = gen_token_usage
+                                break
+                    if token_usage:
+                        break
         
-        # llm_output이 없거나 token_usage가 비어있으면 generations에서 시도
-        if not token_usage and response.generations:
-            for generation_list in response.generations:
-                for generation in generation_list:
-                    if hasattr(generation, 'generation_info') and generation.generation_info:
-                        token_usage = generation.generation_info.get("token_usage", {})
-                        if token_usage:
-                            break
-        
-        # 토큰 정보를 찾지 못한 경우 경고
-        if not token_usage:
+        # 토큰 정보 검증 및 경고
+        if not token_usage or token_usage.get("total_tokens", 0) == 0:
             print(f"[TokenCounterCallback] WARNING: No token usage found in response")
-            print(f"  llm_output: {response.llm_output}")
+            print(f"  Provider: {provider}")
+            print(f"  llm_output keys: {list(response.llm_output.keys()) if response.llm_output else 'None'}")
             print(f"  generations count: {len(response.generations) if response.generations else 0}")
+            if response.generations and len(response.generations) > 0:
+                first_gen = response.generations[0][0] if response.generations[0] else None
+                if first_gen and hasattr(first_gen, 'generation_info'):
+                    print(f"  first generation_info keys: {list(first_gen.generation_info.keys()) if first_gen.generation_info else 'None'}")
             return
         
-        if token_usage:
-            print(f"[TokenCounterCallback] Token usage found: {token_usage}")
-            self.prompt_tokens += token_usage.get("prompt_tokens", 0)
-            self.completion_tokens += token_usage.get("completion_tokens", 0)
-            self.total_tokens += token_usage.get("total_tokens", 0)
-            self.successful_requests += 1
-            
-            # 비용 계산 (선택적)
+        # 토큰 사용량 누적
+        print(f"[TokenCounterCallback] Provider: {provider}")
+        print(f"[TokenCounterCallback] Token usage found: {token_usage}")
+        self.prompt_tokens += token_usage.get("prompt_tokens", 0)
+        self.completion_tokens += token_usage.get("completion_tokens", 0)
+        self.total_tokens += token_usage.get("total_tokens", 0)
+        self.successful_requests += 1
+        
+        # 비용 계산 (선택적)
+        if response.llm_output:
             model_name = response.llm_output.get("model_name", "")
             if model_name:
                 self.total_cost += self._calculate_cost(
