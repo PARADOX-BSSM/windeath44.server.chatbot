@@ -19,6 +19,11 @@ async def publish_chat_event(
     model_name: str = "gpt-5"
 ) -> bool:
 
+    # 토큰 사용량 검증
+    total_tokens = token_usage.get("total_tokens", 0)
+    if total_tokens == 0:
+        print(f"[WARNING] total_tokens is 0! token_usage: {token_usage}")
+    
     # 이벤트 데이터 구성 (avro 스키마에 정확히 맞춤)
     event = {
         "chatbot_id": chatbot_id,

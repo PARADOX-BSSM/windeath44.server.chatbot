@@ -25,6 +25,7 @@ class TokenCounterCallback(BaseCallbackHandler):
         **kwargs: Any
     ) -> None:
         """LLM 호출이 시작될 때 호출됩니다."""
+        print(f"[TokenCounterCallback] on_llm_start called with {len(prompts)} prompts")
         pass
     
     def on_llm_end(
@@ -38,13 +39,31 @@ class TokenCounterCallback(BaseCallbackHandler):
         Args:
             response: LLM 응답 결과 (토큰 사용량 정보 포함)
         """
-        if response.llm_output is None:
+        # OpenAI API의 경우 token_usage 키에 토큰 정보가 있음
+        token_usage = {}
+        
+        # llm_output에서 먼저 시도
+        if response.llm_output is not None:
+            token_usage = response.llm_output.get("token_usage", {})
+        
+        # llm_output이 없거나 token_usage가 비어있으면 generations에서 시도
+        if not token_usage and response.generations:
+            for generation_list in response.generations:
+                for generation in generation_list:
+                    if hasattr(generation, 'generation_info') and generation.generation_info:
+                        token_usage = generation.generation_info.get("token_usage", {})
+                        if token_usage:
+                            break
+        
+        # 토큰 정보를 찾지 못한 경우 경고
+        if not token_usage:
+            print(f"[TokenCounterCallback] WARNING: No token usage found in response")
+            print(f"  llm_output: {response.llm_output}")
+            print(f"  generations count: {len(response.generations) if response.generations else 0}")
             return
         
-        # OpenAI API의 경우 token_usage 키에 토큰 정보가 있음
-        token_usage = response.llm_output.get("token_usage", {})
-        
         if token_usage:
+            print(f"[TokenCounterCallback] Token usage found: {token_usage}")
             self.prompt_tokens += token_usage.get("prompt_tokens", 0)
             self.completion_tokens += token_usage.get("completion_tokens", 0)
             self.total_tokens += token_usage.get("total_tokens", 0)

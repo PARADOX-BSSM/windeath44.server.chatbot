@@ -240,8 +240,13 @@ class CharacterChatBot(LLM):
         # 토큰 카운터 초기화
         self.token_counter.reset()
         
+        print(f"[CharacterChatBot] Starting LLM invocation with TokenCounterCallback")
+        
         # callback과 함께 LLM 실행
         output = await self.llm.ainvoke(input, config={"callbacks": [self.token_counter]})
+        
+        print(f"[CharacterChatBot] LLM invocation completed")
+        print(f"[CharacterChatBot] Token counter state: {self.token_counter}")
         
         # 채팅 히스토리 저장
         await chat_history_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
