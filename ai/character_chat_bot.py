@@ -2,14 +2,35 @@ from typing import List, Dict, Any
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-
+from dotenv import load_dotenv
 from ai.llm import LLM
 from ai.callbacks.token_counter_callback import TokenCounterCallback
-from ai.memory.MemoryRunnable import MemoryRunnable
+from ai.memory.MemoryRunnableV2 import MemoryRunnableV2 as MemoryRunnable
 from app.chatbot.document.chatbot import CharacterWordSet
 from app.chat_history.repository import chat_history_repo
 from core.util.token_util import count_tokens
+import os
+
+load_dotenv()
+
+MODEL_FACTORY = {
+    "openai": lambda model_name, temperature: ChatOpenAI(
+        model=model_name,
+        temperature=temperature
+    ),
+    "google": lambda model_name, temperature: ChatGoogleGenerativeAI(
+        model=model_name,
+        temperature=temperature
+    ),
+    "groq": lambda model_name, temperature: ChatGroq(
+        model=model_name,
+        temperature=temperature,
+        stop_sequences=None  # stop_sequences 대신 stop 사용
+    )
+}
 
 
 class CharacterChatBot(LLM):
@@ -19,9 +40,10 @@ class CharacterChatBot(LLM):
         self.session_id = session_id
         self.token_counter = TokenCounterCallback()
 
-        model_name = "gpt-5"
+        provider = os.getenv("LLM_PROVIDER", "openai")
+        model_name = os.getenv("LLM_MODEL", "gpt-5")
         temperature=0
-        model = ChatOpenAI(model=model_name, temperature=temperature)
+        model = MODEL_FACTORY[provider](model_name, temperature=temperature)
 
         prompt = """
         나는 {character_name}야.  
@@ -66,8 +88,8 @@ class CharacterChatBot(LLM):
         async def __hybrid_retrieve(query_dict: str) -> str:
             query = query_dict["input_text"] if isinstance(query_dict, dict) else str(query_dict)
 
-            sim_docs = similarity_retriever.get_relevant_documents(query)
-            mmr_docs = mmr_retriever.get_relevant_documents(query)
+            sim_docs = similarity_retriever.invoke(query)
+            mmr_docs = mmr_retriever.invoke(query)
 
             seen, merged = set(), []
             for d in sim_docs + mmr_docs:
@@ -130,8 +152,8 @@ class CharacterChatBot(LLM):
         # 실제로 retriever를 실행해서 가져와야 정확함
         query = input_text
         if hasattr(self, '_mmr_retriever') and hasattr(self, '_similarity_retriever'):
-            sim_docs = self._similarity_retriever.get_relevant_documents(query)
-            mmr_docs = self._mmr_retriever.get_relevant_documents(query)
+            sim_docs = self._similarity_retriever.invoke(query)
+            mmr_docs = self._mmr_retriever.invoke(query)
             
             seen, merged = set(), []
             for d in sim_docs + mmr_docs:

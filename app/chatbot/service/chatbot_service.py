@@ -95,8 +95,11 @@ async def dit_chat(chatbot_id: int, chat_request: ChatRequest, user_id: str) -> 
     mmr_retriever, similarity_retriever = await __get_retriever(chatbot_id, chatbot_name)
     session_id = await session_id_generator.generate_chat_session_id(chatbot_id=chatbot_id, user_id=user_id)
 
-    chatbot_instance = CharacterChatBot(character_name=chatbot_name, character_wordset=chatbot.character_wordset,
-                                        session_id=session_id)
+    chatbot_instance = CharacterChatBot(
+        character_name=chatbot_name,
+        character_wordset=chatbot.character_wordset,
+        session_id=session_id
+    )
 
     await chatbot_instance.build_chain(mmr_retriever=mmr_retriever, similarity_retriever=similarity_retriever)
 
