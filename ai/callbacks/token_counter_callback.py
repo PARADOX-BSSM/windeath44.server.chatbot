@@ -1,6 +1,8 @@
+import os
 from typing import Any, Dict, List, Optional
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
+import os
 
 
 class TokenCounterCallback(BaseCallbackHandler):
@@ -27,6 +29,7 @@ class TokenCounterCallback(BaseCallbackHandler):
         """LLM 호출이 시작될 때 호출됩니다."""
         print(f"[TokenCounterCallback] on_llm_start called with {len(prompts)} prompts")
         pass
+
     
     def on_llm_end(
         self, 
@@ -35,41 +38,66 @@ class TokenCounterCallback(BaseCallbackHandler):
     ) -> None:
         """
         LLM 호출이 완료될 때 호출됩니다.
+        OpenAI, Google Gemini, Groq 등 다양한 provider 지원
         
         Args:
             response: LLM 응답 결과 (토큰 사용량 정보 포함)
         """
-        # OpenAI API의 경우 token_usage 키에 토큰 정보가 있음
         token_usage = {}
+        provider = os.getenv("LLM_PROVIDER", "openai")
         
-        # llm_output에서 먼저 시도
-        if response.llm_output is not None:
-            token_usage = response.llm_output.get("token_usage", {})
+        if provider == "google":
+            # Google Gemini API: usage_metadata 사용
+            if response.llm_output and "usage_metadata" in response.llm_output:
+                usage_metadata = response.llm_output.get("usage_metadata", {})
+                token_usage = {
+                    "prompt_tokens": usage_metadata.get("prompt_token_count", 0),
+                    "completion_tokens": usage_metadata.get("candidates_token_count", 0),
+                    "total_tokens": usage_metadata.get("total_token_count", 0)
+                }
+        elif provider == "openai":
+            # OpenAI API: token_usage 사용
+            if response.llm_output and "token_usage" in response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+        elif provider == "groq":
+            # Groq API: token_usage 사용 (OpenAI 호환)
+            if response.llm_output and "token_usage" in response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+
+            # Groq가 generation_info에 저장하는 경우도 확인
+            elif response.generations:
+                for generation_list in response.generations:
+                    for generation in generation_list:
+                        if hasattr(generation, 'generation_info') and generation.generation_info:
+                            gen_token_usage = generation.generation_info.get("token_usage", {})
+                            if gen_token_usage:
+                                token_usage = gen_token_usage
+                                break
+                    if token_usage:
+                        break
         
-        # llm_output이 없거나 token_usage가 비어있으면 generations에서 시도
-        if not token_usage and response.generations:
-            for generation_list in response.generations:
-                for generation in generation_list:
-                    if hasattr(generation, 'generation_info') and generation.generation_info:
-                        token_usage = generation.generation_info.get("token_usage", {})
-                        if token_usage:
-                            break
-        
-        # 토큰 정보를 찾지 못한 경우 경고
-        if not token_usage:
+        # 토큰 정보 검증 및 경고
+        if not token_usage or token_usage.get("total_tokens", 0) == 0:
             print(f"[TokenCounterCallback] WARNING: No token usage found in response")
-            print(f"  llm_output: {response.llm_output}")
+            print(f"  Provider: {provider}")
+            print(f"  llm_output keys: {list(response.llm_output.keys()) if response.llm_output else 'None'}")
             print(f"  generations count: {len(response.generations) if response.generations else 0}")
+            if response.generations and len(response.generations) > 0:
+                first_gen = response.generations[0][0] if response.generations[0] else None
+                if first_gen and hasattr(first_gen, 'generation_info'):
+                    print(f"  first generation_info keys: {list(first_gen.generation_info.keys()) if first_gen.generation_info else 'None'}")
             return
         
-        if token_usage:
-            print(f"[TokenCounterCallback] Token usage found: {token_usage}")
-            self.prompt_tokens += token_usage.get("prompt_tokens", 0)
-            self.completion_tokens += token_usage.get("completion_tokens", 0)
-            self.total_tokens += token_usage.get("total_tokens", 0)
-            self.successful_requests += 1
-            
-            # 비용 계산 (선택적)
+        # 토큰 사용량 누적
+        print(f"[TokenCounterCallback] Provider: {provider}")
+        print(f"[TokenCounterCallback] Token usage found: {token_usage}")
+        self.prompt_tokens += token_usage.get("prompt_tokens", 0)
+        self.completion_tokens += token_usage.get("completion_tokens", 0)
+        self.total_tokens += token_usage.get("total_tokens", 0)
+        self.successful_requests += 1
+        
+        # 비용 계산 (선택적)
+        if response.llm_output:
             model_name = response.llm_output.get("model_name", "")
             if model_name:
                 self.total_cost += self._calculate_cost(
@@ -103,8 +131,9 @@ class TokenCounterCallback(BaseCallbackHandler):
         Returns:
             총 비용 (USD)
         """
-        # OpenAI 가격표 (2025년 기준, 실제 가격은 공식 문서 확인 필요)
+        # 가격표 (2025년 1월 기준)
         pricing = {
+            # OpenAI 모델
             "gpt-4": {
                 "prompt": 0.03 / 1000,  # $0.03 per 1K tokens
                 "completion": 0.06 / 1000  # $0.06 per 1K tokens
@@ -113,17 +142,63 @@ class TokenCounterCallback(BaseCallbackHandler):
                 "prompt": 0.01 / 1000,
                 "completion": 0.03 / 1000
             },
+            "gpt-4o": {
+                "prompt": 0.005 / 1000,
+                "completion": 0.015 / 1000
+            },
             "gpt-3.5-turbo": {
                 "prompt": 0.0005 / 1000,
                 "completion": 0.0015 / 1000
             },
-            "gpt-5": {  # 예시 (실제 가격 확인 필요)
+            "gpt-5": {
                 "prompt": 0.05 / 1000,
                 "completion": 0.10 / 1000
+            },
+            # Google Gemini 모델
+            "gemini-1.5-pro": {
+                "prompt": 0.00125 / 1000,  # $1.25 per 1M tokens
+                "completion": 0.005 / 1000   # $5.00 per 1M tokens
+            },
+            "gemini-1.5-flash": {
+                "prompt": 0.000075 / 1000,  # $0.075 per 1M tokens
+                "completion": 0.0003 / 1000   # $0.30 per 1M tokens
+            },
+            "gemini-2.0-flash": {
+                "prompt": 0.00001 / 1000,  # $0.01 per 1M tokens (임의 설정)
+                "completion": 0.00005 / 1000   # $0.05 per 1M tokens (임의 설정)
+            },
+            "gemini-2.5-flash": {
+                "prompt": 0.00002 / 1000,  # $0.02 per 1M tokens (임의 설정)
+                "completion": 0.00008 / 1000   # $0.08 per 1M tokens (임의 설정)
+            },
+            "gemini-pro": {
+                "prompt": 0.00025 / 1000,  # $0.25 per 1M tokens
+                "completion": 0.0005 / 1000   # $0.50 per 1M tokens
+            },
+            # Groq 모델 (무료 tier 있지만 rate limit 있음)
+            "llama-3.3-70b": {
+                "prompt": 0.00059 / 1000,
+                "completion": 0.00079 / 1000
+            },
+            "llama-3.1-70b": {
+                "prompt": 0.00059 / 1000,
+                "completion": 0.00079 / 1000
+            },
+            "llama-3.1-8b": {
+                "prompt": 0.00005 / 1000,
+                "completion": 0.00008 / 1000
+            },
+            "mixtral-8x7b": {
+                "prompt": 0.00024 / 1000,
+                "completion": 0.00024 / 1000
+            },
+            "gemma-7b": {
+                "prompt": 0.00007 / 1000,
+                "completion": 0.00007 / 1000
             }
         }
         
-        # 모델 이름에서 기본 모델 추출 (gpt-4-0613 -> gpt-4)
+        # 모델 이름에서 기본 모델 추출
         base_model = None
         for model_key in pricing.keys():
             if model_name.startswith(model_key):
