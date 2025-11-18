@@ -251,10 +251,31 @@ class CharacterChatBot(LLM):
         # 채팅 히스토리 저장
         await chat_history_repo.save(session_id=self.session_id, input_text=input_text, output_text=output)
         
+        # 토큰 사용량 확인 및 fallback
+        token_usage = self.token_counter.get_token_usage()
+        
+        # total_tokens가 0인 경우 추정값 사용
+        if token_usage.get("total_tokens", 0) == 0:
+            print(f"[CharacterChatBot] Token usage is 0, using estimated tokens")
+            estimated_total = await self.calculate_token_count(input_text)
+            
+            # 답변 토큰 수 추정 (출력 텍스트 길이 기반)
+            estimated_completion = count_tokens(output) if output else 0
+            estimated_prompt = estimated_total - 1000  # calculate_token_count에서 completion 1000으로 가정
+            
+            token_usage = {
+                "prompt_tokens": estimated_prompt if estimated_prompt > 0 else estimated_total // 2,
+                "completion_tokens": estimated_completion,
+                "total_tokens": estimated_prompt + estimated_completion if estimated_prompt > 0 else estimated_total,
+                "successful_requests": 1,
+                "total_cost": 0.0
+            }
+            print(f"[CharacterChatBot] Estimated token usage: {token_usage}")
+        
         # 토큰 사용량 정보와 함께 반환
         return {
             "answer": output,
-            "token_usage": self.token_counter.get_token_usage()
+            "token_usage": token_usage
         }
 
 
