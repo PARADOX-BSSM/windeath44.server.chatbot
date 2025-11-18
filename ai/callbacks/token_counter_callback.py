@@ -47,7 +47,7 @@ class TokenCounterCallback(BaseCallbackHandler):
         provider = os.getenv("LLM_PROVIDER", "openai")
         
         if provider == "google":
-            # Google Gemini API: usage_metadata 사용
+            # Google Gemini API: usage_metadata 또는 generation_info에서 토큰 정보 추출
             if response.llm_output and "usage_metadata" in response.llm_output:
                 usage_metadata = response.llm_output.get("usage_metadata", {})
                 token_usage = {
@@ -55,6 +55,31 @@ class TokenCounterCallback(BaseCallbackHandler):
                     "completion_tokens": usage_metadata.get("candidates_token_count", 0),
                     "total_tokens": usage_metadata.get("total_token_count", 0)
                 }
+            # generation_info에서 토큰 정보 확인
+            elif response.generations:
+                for generation_list in response.generations:
+                    for generation in generation_list:
+                        if hasattr(generation, 'generation_info') and generation.generation_info:
+                            # Gemini API는 generation_info에 토큰 정보를 포함할 수 있음
+                            gen_info = generation.generation_info
+                            if "usage_metadata" in gen_info:
+                                usage_metadata = gen_info["usage_metadata"]
+                                token_usage = {
+                                    "prompt_tokens": usage_metadata.get("prompt_token_count", 0),
+                                    "completion_tokens": usage_metadata.get("candidates_token_count", 0),
+                                    "total_tokens": usage_metadata.get("total_token_count", 0)
+                                }
+                                break
+                            # 직접 토큰 필드가 있는 경우
+                            elif "token_count" in gen_info or "prompt_token_count" in gen_info:
+                                token_usage = {
+                                    "prompt_tokens": gen_info.get("prompt_token_count", 0),
+                                    "completion_tokens": gen_info.get("candidates_token_count", 0),
+                                    "total_tokens": gen_info.get("total_token_count", gen_info.get("token_count", 0))
+                                }
+                                break
+                    if token_usage:
+                        break
         elif provider == "openai":
             # OpenAI API: token_usage 사용
             if response.llm_output and "token_usage" in response.llm_output:
