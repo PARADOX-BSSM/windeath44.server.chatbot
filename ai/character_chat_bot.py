@@ -257,7 +257,7 @@ class CharacterChatBot(LLM):
         # total_tokens가 0인 경우 추정값 사용
         if token_usage.get("total_tokens", 0) == 0:
             print(f"[CharacterChatBot] Token usage is 0, using estimated tokens")
-            estimated_total = await self.calculate_token_count(input_text)
+            estimated_total = await self.estimate_prompt_tokens(input_text)
             
             # 답변 토큰 수 추정 (출력 텍스트 길이 기반)
             estimated_completion = count_tokens(output) if output else 0
