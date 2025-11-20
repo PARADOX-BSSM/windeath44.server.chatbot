@@ -50,7 +50,7 @@ async def chat(chatbot_id : int, chat_request : ChatRequest, user_id : str, user
     # 실행 전 토큰 사용량 예측
     estimated_tokens = await chatbot_instance.estimate_prompt_tokens(content)
     print(f"Estimated tokens: {estimated_tokens}, Remain tokens: {remain_token}")
-    
+
     # 토큰 부족 체크
     if estimated_tokens > remain_token:
         raise InsufficientTokenException(
@@ -157,7 +157,6 @@ async def generate(character_id : int, chatbot_generate_request : ChatBotGenerat
     print("crawling  ...")
     namuwiki_list = await _crawl_namuwiki(character_name)
     # title, content, level을 튜플의 요소로 갖고 있음.
-    
     if not namuwiki_list:
         raise NoContentFoundException(character_name=character_name)
 
@@ -178,7 +177,7 @@ async def generate(character_id : int, chatbot_generate_request : ChatBotGenerat
 
 
 async def _load_documents_from_pdf(character_id : int, pdf_bytes : bytes) -> List[Document]:
-    pdfLoader = PdfLoader()
+    pdfLoader = PdfLoader(chunk_size=500, chunk_overlap=150)
     documents = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
     return documents
 

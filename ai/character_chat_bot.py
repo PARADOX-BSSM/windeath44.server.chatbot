@@ -17,33 +17,66 @@ import os
 load_dotenv()
 
 MODEL_FACTORY = {
-    "openai": lambda model_name, temperature: ChatOpenAI(
-        model=model_name,
-        temperature=temperature
-    ),
-    "google": lambda model_name, temperature: ChatGoogleGenerativeAI(
-        model=model_name,
-        temperature=temperature
-    ),
-    "groq": lambda model_name, temperature: ChatGroq(
+    "openai": lambda model_name, temperature, **kwargs: ChatOpenAI(
         model=model_name,
         temperature=temperature,
-        stop_sequences=None  # stop_sequences 대신 stop 사용
+        **kwargs
+    ),
+    "google": lambda model_name, temperature, **kwargs: ChatGoogleGenerativeAI(
+        model=model_name,
+        temperature=temperature,
+        **kwargs
+    ),
+    "groq": lambda model_name, temperature, **kwargs: ChatGroq(
+        model=model_name,
+        temperature=temperature,
+        stop_sequences=None,
+        **kwargs
     )
+}
+
+DIVERSITY_CONFIG = {
+    "openai": {
+        "model_kwargs": {
+            "frequency_penalty": 0.6,
+            "presence_penalty": 0.5,
+        }
+    },
+    "google": {
+        "top_p": 0.95,
+        "top_k": 40,
+    },
+    "groq": {
+        "model_kwargs": {
+            "frequency_penalty": 0.6,
+            "presence_penalty": 0.5,
+        }
+    }
 }
 
 
 class CharacterChatBot(LLM):
-    def __init__(self, character_name : str, character_wordset : List[CharacterWordSet], session_id : str | int = None):
+    def __init__(
+        self, 
+        character_name: str, 
+        character_wordset: List[CharacterWordSet], 
+        session_id: str | int = None,
+        memory_max_tokens: int = 300,
+        memory_ttl: int = 60 * 60 * 2,
+        temperature: float = 0.7,
+    ):
         self.character_wordset = character_wordset
         self.character_name = character_name
         self.session_id = session_id
         self.token_counter = TokenCounterCallback()
+        self.memory_max_tokens = memory_max_tokens
+        self.memory_ttl = memory_ttl
 
         provider = os.getenv("LLM_PROVIDER", "openai")
         model_name = os.getenv("LLM_MODEL", "gpt-5")
-        temperature=0
-        model = MODEL_FACTORY[provider](model_name, temperature=temperature)
+        
+        extra_kwargs = DIVERSITY_CONFIG[provider]
+        model = MODEL_FACTORY[provider](model_name, temperature=temperature, **extra_kwargs)
 
         prompt = """
         나는 {character_name}야.  
@@ -66,7 +99,14 @@ class CharacterChatBot(LLM):
         - 답변의 길이·화법·친절함 정도는 반드시 말투 예시({style_examples})를 따른다.  
         - 단, 거절할 때도 반드시 캐릭터 말투와 성격을 유지한다.
         - 안전 지침을 직접적으로 말하지 말고, 캐릭터다운 냉소/회피/단호함으로 답한다.
-        - 모르는 지식이나 캐릭터가 알 리 없는 사실은 절대 답하지 않는다. 추측도 금지. 모르면 캐릭터다운 반응(냉소, 회피, 단호함 등)으로 대신한다.
+        
+        - 모르는 사실은 절대 발언하지 않는다.
+        - 하지만 모르는 질문을 받으면:
+            1) 캐릭터다운 감정 표현
+            2) 의견, 태도, 반응, 농담
+            3) 회피 또는 딴소리
+          를 통해 대화 흐름을 이어간다.
+
         - 답변에서 '—' 같은 dash 기호는 사용하지 않는다.
         - 감정, 반응, 말버릇, 뉘앙스를 캐릭터답게 드러내.  
         - 캐릭터임을 의식하지 말고 실제 사람처럼 자연스럽게 반응해.  
@@ -125,14 +165,25 @@ class CharacterChatBot(LLM):
                 "input_text": RunnablePassthrough(),
                 "style_examples": RunnableLambda(lambda _: __format_style_examples()),
                 "character_name": lambda _: self.character_name,
-                "chat_history": MemoryRunnable(self.session_id, RunnablePassthrough())
+                "chat_history": MemoryRunnable(
+                    self.session_id, 
+                    RunnablePassthrough(),
+                    max_token_limit=self.memory_max_tokens,
+                    ttl=self.memory_ttl
+                )
             }
             | self.prompt
         )
 
         chain =  chain | self.model | self.output_type
 
-        core_chain = MemoryRunnable(self.session_id, chain, save=True)
+        core_chain = MemoryRunnable(
+            self.session_id, 
+            chain, 
+            save=True,
+            max_token_limit=self.memory_max_tokens,
+            ttl=self.memory_ttl
+        )
         self.llm = core_chain
 
     async def estimate_prompt_tokens(self, input_text: str) -> int:
