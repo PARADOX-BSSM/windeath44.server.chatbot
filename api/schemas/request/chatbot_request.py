@@ -1,14 +1,16 @@
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from api.schemas.common.base_model import XSSBaseModel
 
 
-class ChatRequest(BaseModel):
+class ChatRequest(XSSBaseModel):
    content : str
 
-class ChatBotWordSetIdsRequest(BaseModel):
+class ChatBotWordSetIdsRequest(XSSBaseModel):
    chatbot_wordset_ids: List[str]
    # chatbot_wordset_ids: int = Field(..., alias="chatbotIds")
 
-class ChatBotGenerateRequest(BaseModel):
+class ChatBotGenerateRequest(XSSBaseModel):
    description : str
