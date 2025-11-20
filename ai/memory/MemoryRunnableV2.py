@@ -95,18 +95,20 @@ class MemoryRunnableV2(Runnable):
         runnable: Runnable,
         save: bool = False,
         max_token_limit: int = 500,
+        ttl: int = 60 * 60 * 24,
     ):
         self.runnable = runnable
         self.memory = None
         self.save = save
         self.session_id = session_id
+        self.ttl = ttl
         
         if session_id:
             # Redis 채팅 히스토리
             chat_history = RedisChatMessageHistory(
                 session_id=str(session_id),
                 url=os.getenv("REDIS_URL", "redis://localhost:6379"),
-                ttl=60 * 60 * 24,
+                ttl=ttl,
             )
             
             # 요약용 LLM (gpt-3.5-turbo)
