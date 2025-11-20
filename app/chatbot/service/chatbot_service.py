@@ -1,11 +1,8 @@
-import asyncio
-
 from dotenv import load_dotenv
 from langchain_core.vectorstores import VectorStoreRetriever
-from nadf.crawler import Crawler
-from nadf.pdf import PDF
-from langchain_core.documents import Document
-
+from app.chatbot.service.document_converter import document_converter
+from app.chatbot.service.namuwiki_crawler_service import namuwiki_crawler_service
+from app.chatbot.service.vector_store_service import vector_store_service
 from core.grpcs.client import UserGrpcClient
 from core.grpcs.client.chatbot_grpc_client import ChatbotGrpcClient
 from api.schemas.common.response.cursor_response import CursorResponse
@@ -14,13 +11,11 @@ from api.schemas.response.chatbot_response import ChatResponse, ChatBotResponse
 from app.chatbot.document.chatbot import ChatBot, CharacterWordSet
 from app.chatbot.repository.character_vector_store import CharacterVectorStore
 from core.embedder.embedder import Embedder
-from core.loader.pdf_loader import PdfLoader
 from typing import List, Tuple
 from ai.character_chat_bot import CharacterChatBot
 from app.chatbot_wordset.repository import chatbot_wordset_repo
 from app.chatbot.repository import chatbot_repo
 from app.chatbot.exception.already_exists_chatbot_exception import AlreadyExistsChatbotException
-from app.chatbot.exception.no_content_found_exception import NoContentFoundException
 from app.chatbot.exception.insufficient_token_exception import InsufficientTokenException
 from core.fallbacks.rollback_pinecone_on_mongo_failure import rollback_pinecone_on_mongo_failure
 from core.sessions import session_id_generator
@@ -154,82 +149,20 @@ async def generate(character_id : int, chatbot_generate_request : ChatBotGenerat
     character = await chatbot_grpc_client.get_character(character_id)
     character_name = character.name
 
-    print("crawling  ...")
-    namuwiki_list = await _crawl_namuwiki(character_name)
-    # title, content, level을 튜플의 요소로 갖고 있음.
-    if not namuwiki_list:
-        raise NoContentFoundException(character_name=character_name)
-
-    print("generating pdf ...")
-    pdf_bytes = await _generate_pdf(character_name, namuwiki_list)
-
-    print("convert pdf to langchain's documents ...")
-    documents = await _load_documents_from_pdf(character_id, pdf_bytes)
-
-    print("saving document for pinecone ...")
-    await _upsert_character_document_for_pincone(character_id, character_name, documents)
+    print("crawling ...")
+    namuwiki_list = await namuwiki_crawler_service.crawl_character(character_name)
+    
+    print("converting to documents ...")
+    documents = await document_converter.convert_namuwiki_to_documents(character_id, namuwiki_list)
+    
+    print("saving documents to Pinecone ...")
+    await vector_store_service.upsert_character_documents(character_id, character_name, documents)
 
     print("saving character for mongodb ...")
     async with rollback_pinecone_on_mongo_failure(character_id=character_id, character_name=character_name):
         await chatbot_repo.save(character_id=character_id, description=chatbot_generate_request.description, character_name=character_name)
 
     print("success!!!")
-
-
-async def _load_documents_from_pdf(character_id : int, pdf_bytes : bytes) -> List[Document]:
-    pdfLoader = PdfLoader(chunk_size=500, chunk_overlap=150)
-    documents = await pdfLoader.docs_from_pdf_bytes(pdf_bytes=pdf_bytes, source_name=character_id)
-    return documents
-
-
-async def _generate_pdf(character_name : str, namuwiki_list : List[Tuple[str, str, str]]):
-    doc_title = f"{character_name} 세계관"
-    pdf = PDF(doc_title=doc_title)
-    pdf_bytes = await pdf.create_pdf_from_namuwiki_list(
-        namuwiki_list=namuwiki_list,
-        return_type=PDF.ReturnType.RETURN_BYTES,
-    )
-    return pdf_bytes
-
-
-async def _crawl_namuwiki(character_name : str) -> List[Tuple[str, str, str]]:
-    print(f"Attempting to crawl Namuwiki for character: '{character_name}'")
-    crawler = Crawler()
-
-    try:
-        namuwiki_list = await crawler.get_namuwiki_list(name=character_name)
-        print(f"Crawler returned {len(namuwiki_list) if namuwiki_list else 0} items")
-
-        if not namuwiki_list:
-            print(f"Warning: No namuwiki content found for character '{character_name}'")
-            print(f"This could be due to:")
-            print(f"  1. Character name not found in Namuwiki")
-            print(f"  2. Network connectivity issues")
-            print(f"  3. Character name format/encoding issues")
-            raise NoContentFoundException(character_name=character_name)
-        
-        return namuwiki_list
-    
-    except IndexError as e:
-        # 크롤러 내부에서 deque가 비어있을 때 발생
-        print(f"IndexError caught while crawling Namuwiki for '{character_name}': {e}")
-        print(f"Possible causes:")
-        print(f"  1. No search results found in Namuwiki")
-        print(f"  2. HTML parsing failed (structure changed)")
-        print(f"  3. Network error or access blocked")
-        print(f"  4. Character name encoding issue")
-        raise NoContentFoundException(character_name=character_name) from e
-
-
-
-async def _upsert_character_document_for_pincone(character_id : int, character_name : str, documents : List[Document]):
-    embedder = Embedder()
-    character_pinecone_dao = CharacterVectorStore(
-        character_name=character_name,
-        character_id=character_id
-    )
-    # pinecone 저장
-    await character_pinecone_dao.upsert(docs=documents, embed_model=embedder)
 
 async def modify(character_id : int, chatbot_wordset_ids : List[str]):
     # chatbot
