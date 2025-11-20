@@ -13,12 +13,13 @@ from slugify import slugify
 load_dotenv()
 
 WRITE_MEMORIAL_PROMPT = """
-지금 당신은 팬이 만든 추모관을 보고 댓글을 작성하려 합니다.
+당신은 지금 {name}의 추모관을 방문했습니다.
+아래는 추모관에 대한 상세 정보입니다.
 
-[추모관 캐릭터 정보]
-이름 : {name}
-생전에 했던 명언 : {saying}
-출연한 애니메이션 이름 : {anime_name}
+[캐릭터 정보]
+- 이름: {name}
+- 생전에 남긴 명언: {saying}
+- 출연 작품: {anime_name}
 
 [추모관 내용]
 {content}
@@ -26,11 +27,12 @@ WRITE_MEMORIAL_PROMPT = """
 [받은 절 횟수]
 {bow}
 
-[인기 댓글]
+[인기 추모글 예시]
 {popular_comments}
 
-위 내용을 읽고, 인기 댓글을 참고하여 당신의 감정이 자연스럽게 추모 댓글을 작성하세요.  
+위의 정보를 바탕으로, 당신이 느낀 감정에 따라 자연스럽게 추모글을 남겨주세요.
 """
+
 
 async def write_memorial(character_id : int, memorial_id : int, chatbot_grpc_client : ChatbotGrpcClient) -> ChatResponse:
     # 1. 추모관 조회
