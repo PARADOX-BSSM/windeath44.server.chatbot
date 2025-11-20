@@ -11,7 +11,7 @@ permissions:
   
 jobs:
   build-deploy:
-    uses: PARADOX-BSSM/windeath44.manifest.cicd/.github/workflows/ci.yml@master
+    uses: PARADOX-BSSM/windeath44.manifest.cicd/.github/workflows/release.yml@master
     with:
       deploy_repo: 'PARADOX-BSSM/windeath44.manifest.values'
       deploy_path_prefix: 'prod'
