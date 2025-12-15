@@ -1,10 +1,10 @@
 from typing import List
 
-from pydantic import BaseModel
+from api.schemas.common.base_model import XSSBaseModel
 
-class ChatBotWordIdsRequest(BaseModel):
+class ChatBotWordIdsRequest(XSSBaseModel):
     question: str
     answer: str
 
-class ChatBotWordSetRequest(BaseModel):
+class ChatBotWordSetRequest(XSSBaseModel):
     wordset: List[ChatBotWordIdsRequest]

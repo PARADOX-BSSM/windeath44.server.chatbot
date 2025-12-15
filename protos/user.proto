@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.grpc";
+option java_outer_classname = "UserProto";
+
+// getUserRemainToken
+
+service UserService {
+  rpc getUserRemainToken(GetUserRemainTokenRequest) returns (GetUserRemainTokenResponse);
+}
+
+message GetUserRemainTokenRequest {
+  string user_id = 1;
+}
+
+message GetUserRemainTokenResponse {
+  int64 remain_token = 1;
+}
+
+message User {
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+  int64 remain_token = 5;
+  string profile = 6;
+}

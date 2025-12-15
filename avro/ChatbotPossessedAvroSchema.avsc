@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "ChatbotPossessed",
+  "namespace": "windeath44.server.chatbot.avro",
+  "doc": "챗봇 말투셋 신청 승인 이벤트 스키마",
+  "fields": [
+    {
+      "name": "chatbot_id",
+      "type": "int",
+      "doc": "챗봇 ID"
+    },
+    {
+      "name": "talkset_request_id",
+      "type": "string",
+      "doc": "말투셋 ID"
+    },
+    {
+      "name": "applicant_id",
+      "type": "string",
+      "doc": "신청자 ID"
+    },
+    {
+      "name": "approved_at_ms",
+      "type": "long",
+      "doc": "승인 시각 (epoch millis)"
+    }
+  ]
+}

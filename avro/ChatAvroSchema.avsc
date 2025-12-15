@@ -1,0 +1,74 @@
+{
+  "type": "record",
+  "name": "ChatAvroSchema",
+  "namespace": "windeath44.server.chatbot.avro",
+  "doc": "챗봇 채팅 이벤트 스키마",
+  "fields": [
+    {
+      "name": "chatbot_id",
+      "type": "int",
+      "doc": "챗봇 ID"
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "doc": "사용자 ID"
+    },
+    {
+      "name": "session_id",
+      "type": "string",
+      "doc": "채팅 세션 ID"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "doc": "사용자 입력 내용"
+    },
+    {
+      "name": "answer",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "챗봇 응답 내용 (실패 시 null)"
+    },
+    {
+      "name": "content_token_count",
+      "type": "int",
+      "doc": "사용자 입력의 토큰 수"
+    },
+    {
+      "name": "answer_token_count",
+      "type": ["null", "int"],
+      "default": null,
+      "doc": "챗봇 응답의 토큰 수 (실패 시 null)"
+    },
+    {
+      "name": "total_token_count",
+      "type": "int",
+      "doc": "총 사용된 토큰 수 (content + answer)"
+    },
+    {
+      "name": "success",
+      "type": "boolean",
+      "default": true,
+      "doc": "채팅 성공 여부"
+    },
+    {
+      "name": "error_message",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "에러 발생 시 에러 메시지"
+    },
+    {
+      "name": "response_time_ms",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "응답 시간 (밀리초)"
+    },
+    {
+      "name": "model_name",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "사용된 LLM 모델 이름"
+    }
+  ]
+}

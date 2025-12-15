@@ -1,0 +1,52 @@
+import os
+from core.util.http_util import HTTPUtil
+from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+memorial_domain = os.getenv("MEMORIAL_DOMAIN")
+if not memorial_domain:
+    raise ValueError("MEMORIAL_DOMAIN environment variable is not set")
+
+memorial_http_util = HTTPUtil(base_url=memorial_domain, timeout=30)
+
+async def write_memorial_comment(
+    user_id: str,
+    memorial_id: int,
+    content: str,
+    parent_comment_id: Optional[str] = None
+):
+    headers = {"user-id": user_id}
+    body = {"content": content, "parentCommentId" : parent_comment_id if parent_comment_id else None}
+
+    return await memorial_http_util.post_json(
+        endpoint=f"/comment/{memorial_id}",
+        json=body,
+        headers=headers
+    )
+
+
+async def get_memorial_content(memorial_id: int):
+    response = await memorial_http_util.get(endpoint=f"/{memorial_id}")
+    return response.json().get("data", {})
+
+
+
+async def get_popular_comments(memorial_id: int, user_id: str, size: int = 10):
+    headers = {"user-id": user_id}
+    params = {"size": size}
+    response = await memorial_http_util.get(
+        endpoint=f"/comment/{memorial_id}/popular",
+        params=params,
+        headers=headers
+    )
+    return response.json().get("data", [])
+
+async def get_memorials_by_comment_count(size: int = 10):
+    response = await memorial_http_util.get(endpoint="/comment/count", params={"size": size})
+    return response.json().get("data", [])
+
+if __name__ == "__main__":
+    import asyncio
+    response = asyncio.run(get_memorial_content(103))
+    print(response)
