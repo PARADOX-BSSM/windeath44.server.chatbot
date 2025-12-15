@@ -80,7 +80,7 @@ async def get_chatbot_possessed_event_publisher() -> EventPublisher:
     if _chatbot_possessed_publisher is None:
         settings = get_kafka_settings()
 
-        schema_file = Path(__file__).parent.parent.parent / "avro" / "ChatbotPossessed.avsc"
+        schema_file = Path(__file__).parent.parent.parent / "avro" / "ChatbotPossessedAvroSchema.avsc"
 
         avro_serializer = AvroSerializer(
             schema_registry_url=settings.schema_registry_url,
