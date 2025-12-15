@@ -5,6 +5,8 @@ from app.chatbot_wordset.document.wordset_status import WordSetStatus
 from app.chatbot.document.chatbot import CharacterWordSet
 from app.chatbot.repository import chatbot_repo
 from app.chatbot_wordset.exception.already_approved_wordset_exception import AlreadyApprovedWordSetException
+from app.chatbot_wordset.event.chatbot_possessed_event_publisher import publish_chatbot_possessed_event
+from core.events.event_publisher import EventPublisher
 
 
 async def add(character_id : int, chatbot_wordset_request : ChatBotWordIdsRequest, user_id : str):
@@ -24,7 +26,7 @@ async def get_chatbot_wordset_by_character(character_id : int, cursor_id : int, 
 
 
 
-async def approve_wordset(wordset_id: str):
+async def approve_wordset(wordset_id: str, approver_id: str, event_publisher: EventPublisher):
     """말투셋 승인 및 챗봇에 추가"""
     # wordset 조회
     wordset = await chatbot_wordset_repo.find_by_id(wordset_id)
@@ -45,6 +47,15 @@ async def approve_wordset(wordset_id: str):
     
     # 챗봇에 wordset 추가
     await chatbot_repo.add_wordset(wordset.character_id, character_wordset, wordset.writer_id)
+
+    # 승인 이벤트 발행
+    await publish_chatbot_possessed_event(
+        publisher=event_publisher,
+        chatbot_id=wordset.character_id,
+        talkset_request_id=wordset_id,
+        applicant_id=wordset.writer_id,
+        approver_id=approver_id,
+    )
 
 
 async def reject_wordset(wordset_id: str):

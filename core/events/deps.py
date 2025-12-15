@@ -31,6 +31,7 @@ def get_kafka_settings() -> KafkaSettings:
 
 # 전역 프로듀서 인스턴스 (싱글톤 패턴)
 _kafka_publisher: Optional[KafkaEventPublisher] = None
+_chatbot_possessed_publisher: Optional[KafkaEventPublisher] = None
 
 
 async def get_event_publisher() -> EventPublisher:
@@ -70,10 +71,44 @@ async def get_event_publisher() -> EventPublisher:
     return _kafka_publisher
 
 
+async def get_chatbot_possessed_event_publisher() -> EventPublisher:
+    """
+    챗봇 말투셋 승인 이벤트용 Publisher 반환
+    """
+    global _chatbot_possessed_publisher
+
+    if _chatbot_possessed_publisher is None:
+        settings = get_kafka_settings()
+
+        schema_file = Path(__file__).parent.parent.parent / "avro" / "ChatbotPossessed.avsc"
+
+        avro_serializer = AvroSerializer(
+            schema_registry_url=settings.schema_registry_url,
+            schema_file_path=str(schema_file),
+            subject="ChatbotPossessed-value"
+        )
+        async_avro_serializer = AsyncAvroSerializer(avro_serializer)
+
+        _chatbot_possessed_publisher = KafkaEventPublisher(
+            bootstrap_servers=settings.kafka_bootstrap_servers,
+            client_id=settings.kafka_client_id,
+            compression_type=settings.kafka_compression_type,
+            acks=settings.kafka_acks,
+            value_serializer=async_avro_serializer
+        )
+        await _chatbot_possessed_publisher.connect()
+
+    return _chatbot_possessed_publisher
+
+
 async def close_event_publisher() -> None:
     """애플리케이션 종료 시 Event Publisher 연결을 종료합니다."""
-    global _kafka_publisher
-    
+    global _kafka_publisher, _chatbot_possessed_publisher
+
     if _kafka_publisher is not None:
         await _kafka_publisher.close()
         _kafka_publisher = None
+
+    if _chatbot_possessed_publisher is not None:
+        await _chatbot_possessed_publisher.close()
+        _chatbot_possessed_publisher = None

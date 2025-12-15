@@ -5,6 +5,8 @@ from api.schemas.common.response.base_response import BaseResponse
 from api.schemas.request.chatbot_wordset_request import ChatBotWordIdsRequest
 from app.chatbot_wordset.service import chatbot_wordset_service
 from api.depends.get_user_id import get_user_id
+from core.events.deps import get_chatbot_possessed_event_publisher
+from core.events.event_publisher import EventPublisher
 
 router = APIRouter(prefix="/chatbots/wordset", tags=["character_wordset"])
 
@@ -22,8 +24,12 @@ async def chatbot_wordset(
 
 # 어드민 - 말투셋 승인
 @router.patch("/{wordset_id}/approve")
-async def approve_wordset(wordset_id: str) -> BaseResponse:
-    await chatbot_wordset_service.approve_wordset(wordset_id)
+async def approve_wordset(
+    wordset_id: str,
+    user_id: str = Depends(get_user_id),
+    event_publisher: EventPublisher = Depends(get_chatbot_possessed_event_publisher),
+) -> BaseResponse:
+    await chatbot_wordset_service.approve_wordset(wordset_id, user_id, event_publisher)
     return BaseResponse(message="chatbot wordset successfully approved")
 
 
@@ -52,4 +58,3 @@ async def get_chatbot_wordset_by_character(
         character_id, params.cursor_id, params.size, status
     )
     return BaseResponse(message="chatbot wordset successfully retrieved by character", data=chatbot_response)
-
